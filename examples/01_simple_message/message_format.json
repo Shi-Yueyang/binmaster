@@ -1,0 +1,53 @@
+{
+  "endianness": "little",
+  "description": "Simple message format with header and payload",
+  "version": "1.0",
+  "fields": [
+    {
+      "name": "header",
+      "type": "struct",
+      "description": "Message header",
+      "fields": [
+        {
+          "name": "magic",
+          "type": "uint32",
+          "description": "Magic number to identify format"
+        },
+        {
+          "name": "version",
+          "type": "uint16",
+          "description": "Format version"
+        },
+        {
+          "name": "message_type",
+          "type": "uint16",
+          "description": "Type of message"
+        },
+        {
+          "name": "payload_size",
+          "type": "uint32",
+          "description": "Size of payload in bytes"
+        }
+      ]
+    },
+    {
+      "name": "sender",
+      "type": "string",
+      "size": 64,
+      "encoding": "utf-8",
+      "description": "Sender identifier (fixed 64 bytes)"
+    },
+    {
+      "name": "timestamp",
+      "type": "uint64",
+      "description": "Unix timestamp"
+    },
+    {
+      "name": "data",
+      "type": "array",
+      "length_field": "header.payload_size",
+      "element_type": "uint8",
+      "description": "Variable-length payload data"
+    }
+  ]
+}

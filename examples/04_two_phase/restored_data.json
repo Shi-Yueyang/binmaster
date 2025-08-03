@@ -1,0 +1,15 @@
+{
+  "magic": 305419896,
+  "version": 1,
+  "flags": 1,
+  "data_count": 3,
+  "data_array": [
+    100,
+    200,
+    300
+  ],
+  "header_crc": 2130599612,
+  "data_checksum": 130,
+  "total_crc": 3767099701,
+  "calculated_size": 34
+}

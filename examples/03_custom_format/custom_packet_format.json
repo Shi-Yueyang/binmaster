@@ -1,0 +1,51 @@
+{
+  "endianness": "big",
+  "description": "Network packet format",
+  "version": "1.0",
+  "fields": [
+    {
+      "name": "packet_header",
+      "type": "struct",
+      "fields": [
+        {
+          "name": "packet_id",
+          "type": "uint32"
+        },
+        {
+          "name": "sequence_number",
+          "type": "uint32"
+        },
+        {
+          "name": "flags",
+          "type": "uint16"
+        },
+        {
+          "name": "data_length",
+          "type": "uint16"
+        }
+      ]
+    },
+    {
+      "name": "source_address",
+      "type": "array",
+      "size": 4,
+      "element_type": "uint8"
+    },
+    {
+      "name": "destination_address",
+      "type": "array",
+      "size": 4,
+      "element_type": "uint8"
+    },
+    {
+      "name": "payload",
+      "type": "array",
+      "length_field": "packet_header.data_length",
+      "element_type": "uint8"
+    },
+    {
+      "name": "checksum",
+      "type": "uint32"
+    }
+  ]
+}

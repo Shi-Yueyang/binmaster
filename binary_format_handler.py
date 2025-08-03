@@ -15,6 +15,9 @@ Supports:
 import json
 import struct
 import os
+import io
+import zlib
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Union, BinaryIO
 from dataclasses import dataclass
 
@@ -34,6 +37,245 @@ class FieldDefinition:
     length_field: str = None  # For variable-length arrays
     fields: List['FieldDefinition'] = None  # For nested structures
     condition: str = None  # Condition for optional fields
+    function: str = None  # Function to calculate field value (e.g., "crc32")
+    function_scope: str = None  # Scope for function calculation
+    function_scope_start: str = None  # Starting field for range scope
+    function_scope_end: str = None  # Ending field for range scope
+    function_parameters: Dict[str, Any] = None  # Parameters for the function
+
+
+class ScopeResolver:
+    """Resolves different types of scopes for calculated fields."""
+    
+    def __init__(self, field_offsets: Dict[str, int], field_sizes: Dict[str, int]):
+        self.field_offsets = field_offsets
+        self.field_sizes = field_sizes
+    
+    def get_scope_data(self, data: bytes, scope_type: str, 
+                      scope_start: str = None, scope_end: str = None,
+                      current_offset: int = 0) -> bytes:
+        """Get data based on scope definition."""
+        
+        if scope_type == "all_previous":
+            return data[:current_offset]
+        
+        elif scope_type == "entire_file":
+            return data
+        
+        elif scope_type == "from_start":
+            return data[:current_offset]
+        
+        elif scope_type == "field_range":
+            if not scope_start or not scope_end:
+                raise BinaryFormatError("field_range scope requires both scope_start and scope_end")
+            
+            start_offset = self.field_offsets.get(scope_start)
+            end_offset = self.field_offsets.get(scope_end)
+            
+            if start_offset is None:
+                raise BinaryFormatError(f"Start field '{scope_start}' not found")
+            if end_offset is None:
+                raise BinaryFormatError(f"End field '{scope_end}' not found")
+            
+            # Include the end field in the range
+            end_field_size = self.field_sizes.get(scope_end, 0)
+            return data[start_offset:end_offset + end_field_size]
+        
+        elif scope_type == "from_field":
+            if not scope_start:
+                raise BinaryFormatError("from_field scope requires scope_start")
+            
+            start_offset = self.field_offsets.get(scope_start)
+            if start_offset is None:
+                raise BinaryFormatError(f"Start field '{scope_start}' not found")
+            
+            return data[start_offset:current_offset]
+        
+        elif scope_type == "to_field":
+            if not scope_end:
+                raise BinaryFormatError("to_field scope requires scope_end")
+            
+            end_offset = self.field_offsets.get(scope_end)
+            if end_offset is None:
+                raise BinaryFormatError(f"End field '{scope_end}' not found")
+            
+            # Include the end field
+            end_field_size = self.field_sizes.get(scope_end, 0)
+            return data[:end_offset + end_field_size]
+        
+        elif scope_type == "after_field":
+            if not scope_start:
+                raise BinaryFormatError("after_field scope requires scope_start")
+            
+            start_offset = self.field_offsets.get(scope_start)
+            start_field_size = self.field_sizes.get(scope_start, 0)
+            
+            if start_offset is None:
+                raise BinaryFormatError(f"Start field '{scope_start}' not found")
+            
+            return data[start_offset + start_field_size:current_offset]
+        
+        elif scope_type == "last_n_bytes":
+            # Get last N bytes before current position
+            n_bytes = int(scope_start) if scope_start else 100
+            start_pos = max(0, current_offset - n_bytes)
+            return data[start_pos:current_offset]
+        
+        elif scope_type == "specific_bytes":
+            # Get specific byte range: "start:end" format in scope_start
+            if not scope_start:
+                raise BinaryFormatError("specific_bytes scope requires range in scope_start (format: start:end)")
+            
+            try:
+                if ':' in scope_start:
+                    start_byte, end_byte = map(int, scope_start.split(':'))
+                    return data[start_byte:end_byte]
+                else:
+                    # Single byte position
+                    byte_pos = int(scope_start)
+                    return data[byte_pos:byte_pos + 1]
+            except ValueError:
+                raise BinaryFormatError(f"Invalid byte range format: {scope_start}")
+        
+        else:
+            raise BinaryFormatError(f"Unknown scope type: {scope_type}")
+
+
+class EnhancedTwoPhaseSerializer:
+    """Enhanced two-phase serialization with flexible scoping."""
+    
+    def __init__(self, handler: 'BinaryFormatHandler'):
+        self.handler = handler
+        self.calculated_fields: List[FieldDefinition] = []
+        self.field_offsets: Dict[str, int] = {}
+        self.field_sizes: Dict[str, int] = {}
+        self.scope_resolver = None
+    
+    def serialize(self, data: Dict[str, Any], output_file: str) -> None:
+        """Serialize data using enhanced two-phase approach."""
+        # Phase 1: Serialize structure with placeholders for calculated fields
+        buffer = io.BytesIO()
+        self._serialize_phase1(buffer, self.handler.format_definition['fields'], data)
+        
+        # Initialize scope resolver with collected offsets
+        self.scope_resolver = ScopeResolver(self.field_offsets, self.field_sizes)
+        
+        # Phase 2: Calculate and update calculated fields
+        final_data = self._serialize_phase2(buffer.getvalue(), data)
+        
+        # Write final data
+        with open(output_file, 'wb') as f:
+            f.write(final_data)
+    
+    def _serialize_phase1(self, f: BinaryIO, field_defs: List[Dict[str, Any]], data: Dict[str, Any]) -> None:
+        """Phase 1: Serialize structure with placeholders."""
+        for field_def in field_defs:
+            field = self.handler._parse_field_definition(field_def)
+            
+            # Check conditions
+            if not self.handler._evaluate_condition(field.condition, data):
+                continue
+            
+            # Record offset and mark start position
+            start_offset = f.tell()
+            self.field_offsets[field.name] = start_offset
+            
+            # Handle calculated fields
+            if field.function:
+                self.calculated_fields.append(field)
+                # Write placeholder
+                if field.type in self.handler.TYPE_MAP:
+                    format_str = self.handler.endian_char + self.handler.TYPE_MAP[field.type]
+                    f.write(struct.pack(format_str, 0))
+                    self.field_sizes[field.name] = struct.calcsize(format_str)
+                continue
+            
+            # Regular field serialization
+            if field.name in data:
+                value = data[field.name]
+                self.handler._serialize_field(f, field, value, data)
+                # Record field size
+                end_offset = f.tell()
+                self.field_sizes[field.name] = end_offset - start_offset
+            else:
+                raise BinaryFormatError(f"Missing field in data: {field.name}")
+    
+    def _serialize_phase2(self, data: bytes, context: Dict[str, Any]) -> bytes:
+        """Phase 2: Calculate and update calculated fields."""
+        data_array = bytearray(data)
+        
+        for field in self.calculated_fields:
+            offset = self.field_offsets.get(field.name)
+            if offset is None:
+                continue
+            
+            # Get scope data based on field definition
+            scope_data = self.scope_resolver.get_scope_data(
+                data, 
+                field.function_scope or "all_previous",
+                field.function_scope_start,
+                field.function_scope_end,
+                offset
+            )
+            
+            # Calculate value based on function
+            value = self._calculate_function_value(field, scope_data, context)
+            
+            # Update the data
+            if field.type in self.handler.TYPE_MAP:
+                format_str = self.handler.endian_char + self.handler.TYPE_MAP[field.type]
+                struct.pack_into(format_str, data_array, offset, value)
+        
+        return bytes(data_array)
+    
+    def _calculate_function_value(self, field: FieldDefinition, data: bytes, context: Dict[str, Any]) -> Any:
+        """Calculate function value with parameters."""
+        params = field.function_parameters or {}
+        
+        if field.function == "crc32":
+            initial_value = params.get('initial_value', 0)
+            return zlib.crc32(data, initial_value) & 0xffffffff
+        
+        elif field.function == "crc16":
+            polynomial = params.get('polynomial', 0xA001)
+            initial_value = params.get('initial_value', 0xFFFF)
+            
+            crc = initial_value
+            for byte in data:
+                crc ^= byte
+                for _ in range(8):
+                    if crc & 1:
+                        crc = (crc >> 1) ^ polynomial
+                    else:
+                        crc >>= 1
+            return crc
+        
+        elif field.function == "checksum":
+            algorithm = params.get('algorithm', 'sum')
+            modulo = params.get('modulo', 256)
+            
+            if algorithm == 'sum':
+                return sum(data) % modulo
+            elif algorithm == 'xor':
+                result = 0
+                for byte in data:
+                    result ^= byte
+                return result % modulo
+            else:
+                raise BinaryFormatError(f"Unknown checksum algorithm: {algorithm}")
+        
+        elif field.function == "length":
+            offset = params.get('offset', 0)
+            multiplier = params.get('multiplier', 1)
+            return (len(data) * multiplier) + offset
+        
+        elif field.function == "file_size":
+            # Get total file size including this field
+            total_size = len(data) + self.field_sizes.get(field.name, 0)
+            return total_size
+        
+        else:
+            raise BinaryFormatError(f"Unknown function: {field.function}")
 
 
 class BinaryFormatHandler:
@@ -90,7 +332,12 @@ class BinaryFormatHandler:
             encoding=field_def.get('encoding', 'utf-8'),
             length_field=field_def.get('length_field'),
             fields=None,
-            condition=field_def.get('condition')
+            condition=field_def.get('condition'),
+            function=field_def.get('function'),
+            function_scope=field_def.get('function_scope', 'all_previous'),
+            function_scope_start=field_def.get('function_scope_start'),
+            function_scope_end=field_def.get('function_scope_end'),
+            function_parameters=field_def.get('function_parameters', {})
         )
         
         # Handle nested structures
@@ -117,10 +364,22 @@ class BinaryFormatHandler:
             output_file: Path to output binary file
         """
         try:
-            with open(output_file, 'wb') as f:
-                fields = [self._parse_field_definition(field_def) 
-                         for field_def in self.format_definition['fields']]
-                self._serialize_fields(f, fields, data)
+            # Check if we have any calculated fields (functions)
+            has_calculated_fields = any(
+                field_def.get('function') 
+                for field_def in self.format_definition['fields']
+            )
+            
+            if has_calculated_fields:
+                # Use enhanced two-phase serialization for calculated fields
+                serializer = EnhancedTwoPhaseSerializer(self)
+                serializer.serialize(data, output_file)
+            else:
+                # Use simple serialization for non-calculated fields
+                with open(output_file, 'wb') as f:
+                    fields = [self._parse_field_definition(field_def) 
+                             for field_def in self.format_definition['fields']]
+                    self._serialize_fields(f, fields, data)
                 
         except Exception as e:
             raise BinaryFormatError(f"Serialization failed: {e}")
@@ -130,6 +389,14 @@ class BinaryFormatHandler:
         for field in fields:
             # Check if field should be included based on condition
             if not self._evaluate_condition(field.condition, data):
+                continue
+            
+            # Skip functional fields in simple serialization - they should use two-phase
+            if field.function:
+                # Write placeholder for functional fields
+                if field.type in self.TYPE_MAP:
+                    format_str = self.endian_char + self.TYPE_MAP[field.type]
+                    f.write(struct.pack(format_str, 0))
                 continue
                 
             if field.name not in data:

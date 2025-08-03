@@ -1,0 +1,147 @@
+{
+  "endianness": "little",
+  "description": "3D model file format with vertices, textures, and materials",
+  "version": "2.1",
+  "fields": [
+    {
+      "name": "file_header",
+      "type": "struct",
+      "description": "File header information",
+      "fields": [
+        {
+          "name": "signature",
+          "type": "string",
+          "size": 8,
+          "description": "File format signature"
+        },
+        {
+          "name": "version_major",
+          "type": "uint16",
+          "description": "Major version number"
+        },
+        {
+          "name": "version_minor",
+          "type": "uint16",
+          "description": "Minor version number"
+        },
+        {
+          "name": "vertex_count",
+          "type": "uint32",
+          "description": "Number of vertices"
+        },
+        {
+          "name": "face_count",
+          "type": "uint32",
+          "description": "Number of faces"
+        },
+        {
+          "name": "material_count",
+          "type": "uint32",
+          "description": "Number of materials"
+        }
+      ]
+    },
+    {
+      "name": "vertices",
+      "type": "array",
+      "length_field": "file_header.vertex_count",
+      "element_type": "struct",
+      "element_fields": [
+        {
+          "name": "position",
+          "type": "struct",
+          "fields": [
+            {"name": "x", "type": "float32"},
+            {"name": "y", "type": "float32"},
+            {"name": "z", "type": "float32"}
+          ]
+        },
+        {
+          "name": "normal",
+          "type": "struct",
+          "fields": [
+            {"name": "x", "type": "float32"},
+            {"name": "y", "type": "float32"},
+            {"name": "z", "type": "float32"}
+          ]
+        },
+        {
+          "name": "uv",
+          "type": "struct",
+          "fields": [
+            {"name": "u", "type": "float32"},
+            {"name": "v", "type": "float32"}
+          ]
+        },
+        {
+          "name": "color",
+          "type": "struct",
+          "fields": [
+            {"name": "r", "type": "uint8"},
+            {"name": "g", "type": "uint8"},
+            {"name": "b", "type": "uint8"},
+            {"name": "a", "type": "uint8"}
+          ]
+        }
+      ],
+      "description": "Array of vertex data"
+    },
+    {
+      "name": "faces",
+      "type": "array",
+      "length_field": "file_header.face_count",
+      "element_type": "struct",
+      "element_fields": [
+        {"name": "v1", "type": "uint32", "description": "First vertex index"},
+        {"name": "v2", "type": "uint32", "description": "Second vertex index"},
+        {"name": "v3", "type": "uint32", "description": "Third vertex index"},
+        {"name": "material_id", "type": "uint16", "description": "Material index"}
+      ],
+      "description": "Array of face definitions"
+    },
+    {
+      "name": "materials",
+      "type": "array",
+      "length_field": "file_header.material_count",
+      "element_type": "struct",
+      "element_fields": [
+        {
+          "name": "name",
+          "type": "string",
+          "size": 32,
+          "description": "Material name"
+        },
+        {
+          "name": "diffuse_color",
+          "type": "struct",
+          "fields": [
+            {"name": "r", "type": "float32"},
+            {"name": "g", "type": "float32"},
+            {"name": "b", "type": "float32"},
+            {"name": "a", "type": "float32"}
+          ]
+        },
+        {
+          "name": "specular_color",
+          "type": "struct",
+          "fields": [
+            {"name": "r", "type": "float32"},
+            {"name": "g", "type": "float32"},
+            {"name": "b", "type": "float32"}
+          ]
+        },
+        {
+          "name": "shininess",
+          "type": "float32",
+          "description": "Specular shininess factor"
+        },
+        {
+          "name": "texture_path",
+          "type": "string",
+          "description": "Path to texture file (variable length)"
+        }
+      ],
+      "description": "Array of material definitions"
+    }
+  ]
+}

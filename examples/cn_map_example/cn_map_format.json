@@ -1,0 +1,66 @@
+{
+  "endianness": "little",
+  "description": "CN map index",
+  "version": "1.0",
+  "fields": [
+    { "name": "file_type", "type": "uint8" },
+    { "name": "structure_version", "type": "uint16" },
+    { "name": "data_version", "type": "uint16" },
+    { "name": "file_size", "type": "uint16" },
+    { "name": "tsrs_id", "type": "uint32" },
+    { "name": "station_cnt", "type": "uint8" },
+    {
+      "name": "stations",
+      "type": "array",
+      "length_field": "station_cnt",
+      "element_type": "struct",
+      "element_fields": [
+        { "name": "station_id", "type": "uint16" },
+        {
+          "name": "station_abbr",
+          "type": "string",
+          "size": 8,
+          "encoding": "ascii"
+        },
+        {
+          "name": "station_name",
+          "type": "string",
+          "size": 16,
+          "encoding": "gb18030"
+        },
+        { "name": "lowbound_station_cnt", "type": "uint8" },
+        { 
+          "name": "lowbound_station_id", 
+          "type": "uint16",
+          "condition": "lowbound_station_cnt > 0"
+        },
+        { "name": "highound_station_cnt", "type": "uint8" },
+        { 
+          "name": "highound_station_id", 
+          "type": "uint16",
+          "condition": "highound_station_cnt > 0"
+        },
+        { "name": "geo_file_size", "type": "uint16" },
+        { "name": "geo_file_crc", "type": "uint32" },
+        { "name": "geo_file_version", "type": "uint16" },
+        { "name": "min_latitude", "type": "uint32" },
+        { "name": "min_longitude", "type": "uint32" },
+        { "name": "max_latitude", "type": "uint32" },
+        { "name": "max_longitude", "type": "uint32" },
+        { "name": "fix_file_size", "type": "uint16" },
+        { "name": "fix_file_crc", "type": "uint32" },
+        { "name": "fix_file_version", "type": "uint16" }
+      ]
+    },
+
+    { 
+      "name": "crc", 
+      "type": "uint32",
+      "function": "crc32",
+      "function_scope": "all_previous",
+      "function_parameters": {
+        "initial_value": 0
+      }
+    }
+  ]
+}
