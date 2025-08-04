@@ -142,131 +142,6 @@ class ScopeResolver:
             raise BinaryFormatError(f"Unknown scope type: {scope_type}")
 
 
-class TwoPhaseSerializer:
-    """Enhanced two-phase serialization with flexible scoping."""
-    
-    def __init__(self, handler: 'BinaryFormatHandler'):
-        self.handler = handler
-        self.calculated_fields: List[FieldDefinition] = []
-        self.field_offsets: Dict[str, int] = {}
-        self.field_sizes: Dict[str, int] = {}
-        self.scope_resolver = None
-    
-    def serialize(self, data: Dict[str, Any], output_file: str) -> None:
-        """Serialize data using enhanced two-phase approach."""
-        # Phase 1: Serialize structure with placeholders for calculated fields
-        buffer = io.BytesIO()
-        self._serialize_phase1(buffer, self.handler.format_json_dict['fields'], data)
-        
-        # Initialize scope resolver with collected offsets
-        self.scope_resolver = ScopeResolver(self.field_offsets, self.field_sizes)
-        
-        # Phase 2: Calculate and update calculated fields
-        final_data = self._serialize_phase2(buffer.getvalue(), data)
-        
-        # Write final data
-        with open(output_file, 'wb') as f:
-            f.write(final_data)
-    
-    def _serialize_phase1(self, f: BinaryIO, field_defs: List[Dict[str, Any]], data: Dict[str, Any]) -> None:
-        """Phase 1: Serialize structure with placeholders."""
-        for field_def in field_defs:
-            field = self.handler._parse_field_definition(field_def)
-            
-            # Check conditions
-            if not self.handler._evaluate_condition(field.condition, data):
-                continue
-            
-            # Record offset and mark start position
-            start_offset = f.tell()
-            self.field_offsets[field.name] = start_offset
-            
-            # Handle calculated fields
-            if field.function:
-                self.calculated_fields.append(field)
-                # Write placeholder
-                if field.type in self.handler.TYPE_MAP:
-                    format_str = self.handler.endian_char + self.handler.TYPE_MAP[field.type]
-                    f.write(struct.pack(format_str, 0))
-                    self.field_sizes[field.name] = struct.calcsize(format_str)
-                continue
-            
-            # Regular field serialization
-            if field.name in data:
-                value = data[field.name]
-                self.handler._serialize_field(f, field, value, data)
-                # Record field size
-                end_offset = f.tell()
-                self.field_sizes[field.name] = end_offset - start_offset
-            else:
-                raise BinaryFormatError(f"Missing field in data: {field.name}")
-    
-    def _serialize_phase2(self, data: bytes, context: Dict[str, Any]) -> bytes:
-        """Phase 2: Calculate and update calculated fields."""
-        data_array = bytearray(data)
-        
-        for field in self.calculated_fields:
-            offset = self.field_offsets.get(field.name)
-            if offset is None:
-                continue
-            
-            # Get scope data based on field definition
-            scope_data = self.scope_resolver.get_scope_data(
-                data, 
-                field.function_scope or "all_previous",
-                field.function_scope_start,
-                field.function_scope_end,
-                offset
-            )
-            
-            # Calculate value based on function
-            value = self._calculate_function_value(field, scope_data, context)
-            
-            # Update the data
-            if field.type in self.handler.TYPE_MAP:
-                format_str = self.handler.endian_char + self.handler.TYPE_MAP[field.type]
-                struct.pack_into(format_str, data_array, offset, value)
-        
-        return bytes(data_array)
-    
-    def _calculate_function_value(self, field: FieldDefinition, data: bytes, context: Dict[str, Any]) -> Any:
-        """Calculate function value with parameters."""
-        params = field.function_parameters or {}
-        
-        if field.function == "crc32":
-            polynomial = params.get('polynomial', 0x104C11DB7)  # CRC-32 polynomial
-            initial_value = params.get('initial_value', 0xFFFFFFFF)
-            reverse = params.get('reverse', True)
-            xor_out = params.get('xor_out', 0xFFFFFFFF)
-            
-            # Create CRC function using crcmod
-            crc_func = crcmod.mkCrcFun(polynomial, initCrc=initial_value, rev=reverse, xorOut=xor_out)
-            return crc_func(data)
-        elif field.function == "crc16":
-            # Enhanced CRC16 with configurable parameters
-            polynomial = params.get('polynomial', 0x18005)  # CRC-16-CCITT polynomial
-            initial_value = params.get('initial_value', 0xFFFF)
-            reverse = params.get('reverse', True)
-            xor_out = params.get('xor_out', 0x0000)
-            
-            # Create CRC function using crcmod
-            crc_func = crcmod.mkCrcFun(polynomial, initCrc=initial_value, rev=reverse, xorOut=xor_out)
-            return crc_func(data)
-
-        elif field.function == "length":
-            offset = params.get('offset', 0)
-            multiplier = params.get('multiplier', 1)
-            return (len(data) * multiplier) + offset
-        
-        elif field.function == "file_size":
-            # Get total file size including this field
-            total_size = len(data) + self.field_sizes.get(field.name, 0)
-            return total_size
-        
-        else:
-            raise BinaryFormatError(f"Unknown function: {field.function}")
-
-
 class BinaryFormatHandler:
     """Handles serialization and deserialization of custom binary formats."""
     
@@ -351,11 +226,121 @@ class BinaryFormatHandler:
     def serialize_to_binary(self, data: Dict[str, Any], output_file: str) -> None:
 
         try:
-            serializer = TwoPhaseSerializer(self)
-            serializer.serialize(data, output_file)
+            buffer = io.BytesIO()
+            self._serialize_phase1(buffer, self.format_json_dict['fields'], data)
+            
+            # Initialize scope resolver with collected offsets
+            self.scope_resolver = ScopeResolver(self.field_offsets, self.field_sizes)
+            
+            # Phase 2: Calculate and update calculated fields
+            final_data = self._serialize_phase2(buffer.getvalue(), data)
+            
+            # Write final data
+            with open(output_file, 'wb') as f:
+                f.write(final_data)            
+                
+
                 
         except Exception as e:
             raise BinaryFormatError(f"Serialization failed: {e}")
+        
+    def _serialize_phase1(self, f: BinaryIO, field_defs: List[Dict[str, Any]], data: Dict[str, Any]) -> None:
+        """Phase 1: Serialize structure with placeholders."""
+        for field_def in field_defs:
+            field = self._parse_field_definition(field_def)
+            
+            # Check conditions
+            if not self._evaluate_condition(field.condition, data):
+                continue
+            
+            # Record offset and mark start position
+            start_offset = f.tell()
+            self.field_offsets[field.name] = start_offset
+            
+            # Handle calculated fields
+            if field.function:
+                self.calculated_fields.append(field)
+                # Write placeholder
+                if field.type in self.TYPE_MAP:
+                    format_str = self.endian_char + self.TYPE_MAP[field.type]
+                    f.write(struct.pack(format_str, 0))
+                    self.field_sizes[field.name] = struct.calcsize(format_str)
+                continue
+            
+            # Regular field serialization
+            if field.name in data:
+                value = data[field.name]
+                self._serialize_field(f, field, value, data)
+                # Record field size
+                end_offset = f.tell()
+                self.field_sizes[field.name] = end_offset - start_offset
+            else:
+                raise BinaryFormatError(f"Missing field in data: {field.name}")
+    
+    def _serialize_phase2(self, data: bytes, context: Dict[str, Any]) -> bytes:
+        """Phase 2: Calculate and update calculated fields."""
+        data_array = bytearray(data)
+        
+        for field in self.calculated_fields:
+            offset = self.field_offsets.get(field.name)
+            if offset is None:
+                continue
+            
+            # Get scope data based on field definition
+            scope_data = self.scope_resolver.get_scope_data(
+                data, 
+                field.function_scope or "all_previous",
+                field.function_scope_start,
+                field.function_scope_end,
+                offset
+            )
+            
+            # Calculate value based on function
+            value = self._calculate_function_value(field, scope_data, context)
+            
+            # Update the data
+            if field.type in self.TYPE_MAP:
+                format_str = self.endian_char + self.TYPE_MAP[field.type]
+                struct.pack_into(format_str, data_array, offset, value)
+        
+        return bytes(data_array)
+    
+    def _calculate_function_value(self, field: FieldDefinition, data: bytes, context: Dict[str, Any]) -> Any:
+        """Calculate function value with parameters."""
+        params = field.function_parameters or {}
+        
+        if field.function == "crc32":
+            polynomial = params.get('polynomial', 0x104C11DB7)  # CRC-32 polynomial
+            initial_value = params.get('initial_value', 0xFFFFFFFF)
+            reverse = params.get('reverse', True)
+            xor_out = params.get('xor_out', 0xFFFFFFFF)
+            
+            # Create CRC function using crcmod
+            crc_func = crcmod.mkCrcFun(polynomial, initCrc=initial_value, rev=reverse, xorOut=xor_out)
+            return crc_func(data)
+        elif field.function == "crc16":
+            # Enhanced CRC16 with configurable parameters
+            polynomial = params.get('polynomial', 0x18005)  # CRC-16-CCITT polynomial
+            initial_value = params.get('initial_value', 0xFFFF)
+            reverse = params.get('reverse', True)
+            xor_out = params.get('xor_out', 0x0000)
+            
+            # Create CRC function using crcmod
+            crc_func = crcmod.mkCrcFun(polynomial, initCrc=initial_value, rev=reverse, xorOut=xor_out)
+            return crc_func(data)
+
+        elif field.function == "length":
+            offset = params.get('offset', 0)
+            multiplier = params.get('multiplier', 1)
+            return (len(data) * multiplier) + offset
+        
+        elif field.function == "file_size":
+            # Get total file size including this field
+            total_size = len(data) + self.field_sizes.get(field.name, 0)
+            return total_size
+        
+        else:
+            raise BinaryFormatError(f"Unknown function: {field.function}")
     
     def _serialize_fields(self, f: BinaryIO, fields: List[FieldDefinition], data: Dict[str, Any]) -> None:
         """Serialize a list of fields to binary stream."""
