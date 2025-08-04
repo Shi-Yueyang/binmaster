@@ -253,29 +253,29 @@ class BinaryFormatHandler:
             if not self._evaluate_condition(field.condition, data):
                 continue
             
-            # Record offset and mark start position
+            if field.name not in data:
+                raise BinaryFormatError(f"Missing field in data: {field.name}")
+            if field.type not in self.TYPE_MAP and field.type not in ['string', 'array', 'struct']:
+                raise BinaryFormatError(f"Unsupported field type: {field.type}")
+
+            value = data[field.name]
             start_offset = f.tell()
             self.field_offsets[field.name] = start_offset
             
             # Handle calculated fields
-            if field.function:
+            if field.function and value == "auto":
                 self.calculated_fields.append(field)
-                # Write placeholder
-                if field.type in self.TYPE_MAP:
-                    format_str = self.endian_char + self.TYPE_MAP[field.type]
-                    f.write(struct.pack(format_str, 0))
-                    self.field_sizes[field.name] = struct.calcsize(format_str)
-                continue
-            
+                format_str = self.endian_char + self.TYPE_MAP[field.type]
+                f.write(struct.pack(format_str, 0))
+                self.field_sizes[field.name] = struct.calcsize(format_str)
             # Regular field serialization
-            if field.name in data:
+            else:
                 value = data[field.name]
                 self._serialize_field(f, field, value, data)
                 # Record field size
                 end_offset = f.tell()
                 self.field_sizes[field.name] = end_offset - start_offset
-            else:
-                raise BinaryFormatError(f"Missing field in data: {field.name}")
+
     
     def _serialize_phase2(self, data: bytes, context: Dict[str, Any]) -> bytes:
         """Phase 2: Calculate and update calculated fields."""
@@ -328,6 +328,14 @@ class BinaryFormatHandler:
             # Create CRC function using crcmod
             crc_func = crcmod.mkCrcFun(polynomial, initCrc=initial_value, rev=reverse, xorOut=xor_out)
             return crc_func(data)
+        elif field.function == "count":
+            key = params.get("key", "")
+            if not key:
+                return 0
+            list_to_count = context.get(key, [])
+            if not isinstance(list_to_count, list):
+                return 0
+            return len(list_to_count)
 
         elif field.function == "length":
             offset = params.get('offset', 0)

@@ -8,7 +8,14 @@
     { "name": "data_version", "type": "uint16" },
     { "name": "file_size", "type": "uint16" },
     { "name": "tsrs_id", "type": "uint32" },
-    { "name": "station_cnt", "type": "uint8" },
+    {
+      "name": "station_cnt",
+      "type": "uint8",
+      "function": "count",
+      "function_parameters": {
+        "key":"stations"
+      }
+    },
     {
       "name": "stations",
       "type": "array",
@@ -29,14 +36,14 @@
           "encoding": "gb18030"
         },
         { "name": "lowbound_station_cnt", "type": "uint8" },
-        { 
-          "name": "lowbound_station_id", 
+        {
+          "name": "lowbound_station_id",
           "type": "uint16",
           "condition": "lowbound_station_cnt > 0"
         },
         { "name": "highound_station_cnt", "type": "uint8" },
-        { 
-          "name": "highound_station_id", 
+        {
+          "name": "highound_station_id",
           "type": "uint16",
           "condition": "highound_station_cnt > 0"
         },
@@ -53,8 +60,8 @@
       ]
     },
 
-    { 
-      "name": "crc", 
+    {
+      "name": "crc",
       "type": "uint32",
       "function": "crc32",
       "function_scope": "all_previous",
