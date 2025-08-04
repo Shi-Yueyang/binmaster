@@ -156,7 +156,7 @@ class TwoPhaseSerializer:
         """Serialize data using enhanced two-phase approach."""
         # Phase 1: Serialize structure with placeholders for calculated fields
         buffer = io.BytesIO()
-        self._serialize_phase1(buffer, self.handler.format_definition['fields'], data)
+        self._serialize_phase1(buffer, self.handler.format_json_dict['fields'], data)
         
         # Initialize scope resolver with collected offsets
         self.scope_resolver = ScopeResolver(self.field_offsets, self.field_sizes)
@@ -292,9 +292,13 @@ class BinaryFormatHandler:
         Args:
             format_file: Path to JSON file containing format definition
         """
-        self.format_definition = self._load_format_definition(format_file)
-        self.endianness = self.format_definition.get('endianness', 'little')
+        self.format_json_dict = self._load_format_definition(format_file)
+        self.endianness = self.format_json_dict.get('endianness', 'little')
         self.endian_char = '<' if self.endianness == 'little' else '>'
+        self.calculated_fields: List[FieldDefinition] = []
+        self.field_offsets: Dict[str, int] = {}
+        self.field_sizes: Dict[str, int] = {}
+        self.scope_resolver = None
         
     def _load_format_definition(self, format_file: str) -> Dict[str, Any]:
         """Load and validate format definition from JSON file."""
@@ -345,30 +349,10 @@ class BinaryFormatHandler:
         return field
     
     def serialize_to_binary(self, data: Dict[str, Any], output_file: str) -> None:
-        """
-        Serialize JSON data to binary file according to format definition.
-        
-        Args:
-            data: Dictionary containing the data to serialize
-            output_file: Path to output binary file
-        """
+
         try:
-            # Check if we have any calculated fields (functions)
-            has_calculated_fields = any(
-                field_def.get('function') 
-                for field_def in self.format_definition['fields']
-            )
-            
-            if has_calculated_fields:
-                # Use enhanced two-phase serialization for calculated fields
-                serializer = TwoPhaseSerializer(self)
-                serializer.serialize(data, output_file)
-            else:
-                # Use simple serialization for non-calculated fields
-                with open(output_file, 'wb') as f:
-                    fields = [self._parse_field_definition(field_def) 
-                             for field_def in self.format_definition['fields']]
-                    self._serialize_fields(f, fields, data)
+            serializer = TwoPhaseSerializer(self)
+            serializer.serialize(data, output_file)
                 
         except Exception as e:
             raise BinaryFormatError(f"Serialization failed: {e}")
@@ -465,7 +449,7 @@ class BinaryFormatHandler:
         try:
             with open(input_file, 'rb') as f:
                 fields = [self._parse_field_definition(field_def) 
-                         for field_def in self.format_definition['fields']]
+                         for field_def in self.format_json_dict['fields']]
                 return self._deserialize_fields(f, fields)
                 
         except Exception as e:
