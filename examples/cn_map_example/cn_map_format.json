@@ -59,7 +59,7 @@
       "function": "crc32",
       "function_scope": "all_previous",
       "function_parameters": {
-        "initial_value": 0
+        "initial_value": 4294967295
       }
     }
   ]

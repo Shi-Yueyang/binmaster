@@ -28,7 +28,7 @@ def main():
     output_file_restored = 'map_index_test_restored.json'
     with open(output_file_restored, 'w', encoding='utf-8') as f:
         json.dump(map_index_restored, f, indent=2, ensure_ascii=False)
-    
+    os.remove('map_index_test.bin')
 
 if __name__ == "__main__":
     main()

@@ -16,10 +16,11 @@ import json
 import struct
 import os
 import io
-import zlib
+import crcmod
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Union, BinaryIO
 from dataclasses import dataclass
+
 
 
 class BinaryFormatError(Exception):
@@ -141,7 +142,7 @@ class ScopeResolver:
             raise BinaryFormatError(f"Unknown scope type: {scope_type}")
 
 
-class EnhancedTwoPhaseSerializer:
+class TwoPhaseSerializer:
     """Enhanced two-phase serialization with flexible scoping."""
     
     def __init__(self, handler: 'BinaryFormatHandler'):
@@ -233,37 +234,25 @@ class EnhancedTwoPhaseSerializer:
         params = field.function_parameters or {}
         
         if field.function == "crc32":
-            initial_value = params.get('initial_value', 0)
-            return zlib.crc32(data, initial_value) & 0xffffffff
-        
+            polynomial = params.get('polynomial', 0x104C11DB7)  # CRC-32 polynomial
+            initial_value = params.get('initial_value', 0xFFFFFFFF)
+            reverse = params.get('reverse', True)
+            xor_out = params.get('xor_out', 0xFFFFFFFF)
+            
+            # Create CRC function using crcmod
+            crc_func = crcmod.mkCrcFun(polynomial, initCrc=initial_value, rev=reverse, xorOut=xor_out)
+            return crc_func(data)
         elif field.function == "crc16":
-            polynomial = params.get('polynomial', 0xA001)
+            # Enhanced CRC16 with configurable parameters
+            polynomial = params.get('polynomial', 0x18005)  # CRC-16-CCITT polynomial
             initial_value = params.get('initial_value', 0xFFFF)
+            reverse = params.get('reverse', True)
+            xor_out = params.get('xor_out', 0x0000)
             
-            crc = initial_value
-            for byte in data:
-                crc ^= byte
-                for _ in range(8):
-                    if crc & 1:
-                        crc = (crc >> 1) ^ polynomial
-                    else:
-                        crc >>= 1
-            return crc
-        
-        elif field.function == "checksum":
-            algorithm = params.get('algorithm', 'sum')
-            modulo = params.get('modulo', 256)
-            
-            if algorithm == 'sum':
-                return sum(data) % modulo
-            elif algorithm == 'xor':
-                result = 0
-                for byte in data:
-                    result ^= byte
-                return result % modulo
-            else:
-                raise BinaryFormatError(f"Unknown checksum algorithm: {algorithm}")
-        
+            # Create CRC function using crcmod
+            crc_func = crcmod.mkCrcFun(polynomial, initCrc=initial_value, rev=reverse, xorOut=xor_out)
+            return crc_func(data)
+
         elif field.function == "length":
             offset = params.get('offset', 0)
             multiplier = params.get('multiplier', 1)
@@ -372,7 +361,7 @@ class BinaryFormatHandler:
             
             if has_calculated_fields:
                 # Use enhanced two-phase serialization for calculated fields
-                serializer = EnhancedTwoPhaseSerializer(self)
+                serializer = TwoPhaseSerializer(self)
                 serializer.serialize(data, output_file)
             else:
                 # Use simple serialization for non-calculated fields
