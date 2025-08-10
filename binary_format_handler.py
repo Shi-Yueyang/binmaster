@@ -43,7 +43,8 @@ class FieldDefinition:
     function_scope_start: str = None  # Starting field for range scope
     function_scope_end: str = None  # Ending field for range scope
     function_parameters: Dict[str, Any] = None  # Parameters for the function
-
+    discriminator_field:str = None
+    union_variants: Dict[str,List[Dict[str,Any]]] = None
 
 class ScopeResolver:
     """Resolves different types of scopes for calculated fields."""
@@ -205,7 +206,9 @@ class BinaryFormatHandler:
             function_scope=field_def.get('function_scope', 'all_previous'),
             function_scope_start=field_def.get('function_scope_start'),
             function_scope_end=field_def.get('function_scope_end'),
-            function_parameters=field_def.get('function_parameters', {})
+            function_parameters=field_def.get('function_parameters', {}),
+            discriminator_field=field_def.get('discriminator_field'),
+            union_variants=field_def.get('union_variants', {})
         )
         
         # Handle nested structures
@@ -219,8 +222,18 @@ class BinaryFormatHandler:
             }
             if 'element_fields' in field_def:
                 element_def['fields'] = field_def['element_fields']
+            if 'discriminator_field' in field_def:
+                element_def['discriminator_field'] = field_def['discriminator_field']
+            if 'union_variants' in field_def:
+                element_def['union_variants'] = field_def['union_variants']
+                
+            
             field.fields = [self._parse_field_definition(element_def)]
             
+        elif field.type == 'union':
+            parsed_variants = {}
+            for variant_key, variant_fields in field.union_variants.items():
+                parsed_variants[variant_key] = [self._parse_field_definition(f) for f in variant_fields]
         return field
     
     def serialize_to_binary(self, data: Dict[str, Any], output_file: str) -> None:
@@ -377,7 +390,11 @@ class BinaryFormatHandler:
             # Basic numeric type
             format_str = self.endian_char + self.TYPE_MAP[field.type]
             f.write(struct.pack(format_str, value))
-            
+        elif field.type == 'int24':
+            if not (-8388608 <= value <= 8388607):
+                raise BinaryFormatError(f"Value out of range for int24: {value}")
+            packed = struct.pack(self.endian_char + 'i', value)[0:3]
+            f.write(packed)
         elif field.type == 'string':
             # String type
             encoded = value.encode(field.encoding)
@@ -401,30 +418,40 @@ class BinaryFormatHandler:
                 # Length is determined by another field (support dot notation)
                 array_length = self._get_nested_value(context, field.length_field)
                 if array_length is None:
-                    array_length = len(value)
+                    raise BinaryFormatError(f"Length field {field.length_field} not found for array {field.name}")
             elif field.size:
-                # Fixed size array
-                array_length = field.size
+                if(field.size < 0):
+                    array_length = len(value)
+                else:
+                    array_length = field.size
             else:
-                # Variable length array - write length first
-                length_format = self.endian_char + 'I'
-                f.write(struct.pack(length_format, len(value)))
-                array_length = len(value)
+                raise BinaryFormatError(f"Array field {field.name} must have either size or length_field defined")
             
             # Serialize array elements
-            element_field = field.fields[0] if field.fields else None
+            element_fields = field.fields[0] if field.fields else None
             for i in range(array_length):
                 if i < len(value):
-                    self._serialize_field(f, element_field, value[i], context)
+                    self._serialize_field(f, element_fields, value[i], context)
                 else:
                     # Pad with zeros for fixed-size arrays
-                    self._serialize_field(f, element_field, 0, context)
+                    self._serialize_field(f, element_fields, 0, context)
                     
         elif field.type == 'struct':
             # Nested structure
             if not isinstance(value, dict):
                 raise BinaryFormatError(f"Expected dict for struct field {field.name}")
             self._serialize_fields(f, field.fields, value)
+        elif field.type == 'union':
+            if not isinstance(value,dict):
+                raise BinaryFormatError(f"Expected dict for union field {field.name}")
+            discriminator_value = self._get_nested_value(context, field.discriminator_field)
+            if discriminator_value is None:
+                raise BinaryFormatError(f"Discriminator field '{field.discriminator_field}' not found for union {field.name}")
+            variant_key = str(discriminator_value)
+            if variant_key not in field.union_variants:
+                raise BinaryFormatError(f"Unknown union variant '{variant_key}' for field {field.name}")
+            variant_fields = field.union_variants[variant_key]
+            self._serialize_fields(f,variant_fields,value)
             
         else:
             raise BinaryFormatError(f"Unsupported field type: {field.type}")
@@ -528,7 +555,12 @@ class BinaryFormatHandler:
             if len(data) < size:
                 raise BinaryFormatError(f"Unexpected end of file reading {field.name}")
             return struct.unpack(format_str, data)[0]
-            
+        elif field.type == 'int24':
+            # Read 3 bytes for int24
+            data = f.read(3)
+            if len(data) < 3:
+                raise BinaryFormatError(f"Unexpected end of file reading {field.name}")
+            return struct.unpack(self.endian_char + 'i', data + b'\x00')[0]
         elif field.type == 'string':
             # String type
             if field.size:
@@ -560,29 +592,36 @@ class BinaryFormatHandler:
                 if array_length is None:
                     raise BinaryFormatError(f"Length field {field.length_field} not found for array {field.name}")
             elif field.size:
-                # Fixed size array
                 array_length = field.size
             else:
-                # Variable length array - read length first
-                length_format = self.endian_char + 'I'
-                length_size = struct.calcsize(length_format)
-                length_data = f.read(length_size)
-                if len(length_data) < length_size:
-                    raise BinaryFormatError(f"Unexpected end of file reading {field.name} length")
-                array_length = struct.unpack(length_format, length_data)[0]
-            
+                raise BinaryFormatError(f"Array field {field.name} must have either size or length_field defined")
             # Deserialize array elements
             result = []
             element_field = field.fields[0] if field.fields else None
-            for _ in range(array_length):
-                element = self._deserialize_field(f, element_field, context)
-                result.append(element)
+            if array_length > 0:
+                for _ in range(array_length):
+                    element = self._deserialize_field(f, element_field, context)
+                    result.append(element)
+            else:
+                while True:
+                    try:
+                        element = self._deserialize_field(f, element_field, context)
+                        result.append(element)
+                    except BinaryFormatError:
+                        break
             return result
             
         elif field.type == 'struct':
             # Nested structure
             return self._deserialize_fields(f, field.fields)
-            
+        elif field.type == 'union':
+            discriminator_value = self._get_nested_value(context,field.discriminator_field)
+            if discriminator_value is None:
+                raise BinaryFormatError(f"Discriminator field '{field.discriminator_field}' not found for union {field.name}")
+            first_key = next(iter(field.union_variants))
+            first_union_variant = field.union_variants[first_key]
+            discriminator_type = first_union_variant[0]
+            pass
         else:
             raise BinaryFormatError(f"Unsupported field type: {field.type}")
 

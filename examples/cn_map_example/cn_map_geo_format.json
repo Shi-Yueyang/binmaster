@@ -1,0 +1,50 @@
+{
+  "endianness": "little",
+  "description": "CN map geo",
+  "version": "1.0",
+  "fields": [
+    { "name": "file_type", "type": "uint8" },
+    { "name": "structure_version", "type": "uint16" },
+    { "name": "data_version", "type": "uint16" },
+    { "name": "station_id", "type": "uint16" },
+    {
+      "name": "track_cnt",
+      "type": "uint8",
+      "function": "count",
+      "function_parameters": {
+        "key": "tracks"
+      }
+    },
+    {
+      "name": "tracks",
+      "type": "array",
+      "length_field": "track_cnt",
+      "element_type": "struct",
+      "element_fields": [
+        { "name": "station_id", "type": "uint8" },
+        { "name": "track_feature", "type": "uint8" },
+        { "name": "start_location", "type": "int32" },
+        { "name": "start_latitude", "type": "int32" },
+        { "name": "start_longitude", "type": "int32" },
+        { "name": "end_location", "type": "int32" },
+        { "name": "end_latitude", "type": "int32" },
+        { "name": "end_longitude", "type": "int32" },
+        { "name": "start_point_addr_offset", "type": "uint16" },
+        { "name": "end_point_addr_offset", "type": "uint16" }
+      ]
+    },
+    {
+      "name": "points",
+      "type": "array",
+      "size": -1,
+      "element_type": "struct",
+      "element_fields": [
+        { "name": "location_delta", "type": "int32" },
+        { "name": "latitude_delta", "type": "int24" },
+        { "name": "longitude_delta", "type": "int24" },
+        { "name": "angle_delta", "type": "int16" },
+        { "name": "is_near_track", "type": "uint8" }
+      ]
+    }
+  ]
+}

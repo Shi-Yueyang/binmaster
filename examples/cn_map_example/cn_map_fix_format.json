@@ -1,0 +1,100 @@
+{
+  "endianness": "little",
+  "description": "CN map fix",
+  "version": "1.0",
+  "fields": [
+    { "name": "file_type", "type": "uint8" },
+    { "name": "structure_version", "type": "uint16" },
+    { "name": "data_version", "type": "uint16" },
+    { "name": "station_id", "type": "uint16" },
+    {
+      "name": "bos_cnt",
+      "type": "uint8",
+      "function": "count",
+      "function_parameters": {
+        "key": "boses"
+      }
+    },
+    {
+      "name": "boses",
+      "type": "array",
+      "length_field": "bos_cnt",
+      "element_type": "struct",
+      "element_fields": [
+        { "name": "bos_near_track_id", "type": "uint8" },
+        { "name": "bos_near_addr_offset", "type": "uint16" }
+      ]
+    },
+    {
+      "name": "eos_cnt",
+      "type": "uint8",
+      "function": "count",
+      "function_parameters": {
+        "key": "eoses"
+      }
+    },
+    {
+      "name": "eoses",
+      "type": "array",
+      "length_field": "eos_cnt",
+      "element_type": "struct",
+      "element_fields": [
+        { "name": "eos_near_track_id", "type": "uint8" },
+        { "name": "eos_near_addr_offset", "type": "uint16" }
+      ]
+    },
+    { "name": "switch_addr_offset", "type": "uint16" },
+    { "name": "balise_addr_offset", "type": "uint16" },
+    { "name": "signal_addr_offset", "type": "uint16" },
+    { "name": "track_addr_offset", "type": "uint16" },
+    {
+      "name": "fix_points",
+      "type": "array",
+      "size": -1,
+      "element_type": "union",
+      "discriminator_field": "point_type",
+      "union_variants":{
+        "0":[
+          {"name":"point_type","type":"uint8"},
+          {"name":"neighbor_addr_offset","type":"uint16"},
+          {"name":"tsrs_id","type":"uint32"},
+          {"name":"near_station_id","type":"uint16"},
+          {"name":"near_station_boundary_type","type":"uint8"},
+          {"name":"near_station_track_id","type":"uint8"},
+          {"name":"location","type":"int32"},
+          {"name":"track_id","type":"uint8"}
+        ],
+        "1":[
+          {"name":"point_type","type":"uint8"},
+          {"name":"neighbor_addr_offset","type":"uint16"},
+          {"name":"tsrs_id","type":"uint32"},
+          {"name":"near_station_id","type":"uint16"},
+          {"name":"near_station_boundary_type","type":"uint8"},
+          {"name":"near_station_track_id","type":"uint8"},
+          {"name":"location","type":"int32"},
+          {"name":"track_id","type":"uint8"}
+        ],
+        "254":[
+          {"name":"point_type","type":"uint8"},
+          {"name":"neighbor_addr_offset","type":"uint16"},
+          {"name":"tsrs_id","type":"uint32"},
+          {"name":"near_station_id","type":"uint16"},
+          {"name":"near_station_boundary_type","type":"uint8"},
+          {"name":"near_station_track_id","type":"uint8"},
+          {"name":"location","type":"int32"},
+          {"name":"track_id","type":"uint8"}
+        ],
+        "255":[
+          {"name":"point_type","type":"uint8"},
+          {"name":"neighbor_addr_offset","type":"uint16"},
+          {"name":"tsrs_id","type":"uint32"},
+          {"name":"near_station_id","type":"uint16"},
+          {"name":"near_station_boundary_type","type":"uint8"},
+          {"name":"near_station_track_id","type":"uint8"},
+          {"name":"location","type":"int32"},
+          {"name":"track_id","type":"uint8"}
+        ]
+      }
+    }
+  ]
+}

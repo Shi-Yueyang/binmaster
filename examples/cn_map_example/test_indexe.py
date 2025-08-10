@@ -10,11 +10,11 @@ from binary_format_handler import BinaryFormatHandler, BinaryFormatError
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
-    handler = BinaryFormatHandler('cn_map_format.json')
+    handler = BinaryFormatHandler('cn_map_index_format.json')
 
     # deserialize
-    map_index = handler.deserialize_from_binary('150896641.0')
-    output_file = '150896641.0.json'
+    map_index = handler.deserialize_from_binary('mapfiles/150896641.0')
+    output_file = 'mapfiles/150896641.0.json'
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(map_index, f, indent=2, ensure_ascii=False)
     print(f"Result saved to: {output_file}")

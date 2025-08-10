@@ -1,0 +1,25 @@
+{
+  "file_type": 2,
+  "structure_version": 1,
+  "data_version": 2,
+  "station_id": 64642,
+  "bos_cnt": 1,
+  "boses": [
+    {
+      "bos_near_track_id": 1,
+      "bos_near_addr_offset": 23
+    }
+  ],
+  "eos_cnt": 1,
+  "eoses": [
+    {
+      "eos_near_track_id": 1,
+      "eos_near_addr_offset": 39
+    }
+  ],
+  "switch_addr_offset": 55,
+  "balise_addr_offset": 151,
+  "signal_addr_offset": 1555,
+  "track_addr_offset": 1707,
+  "fix_points": []
+}
