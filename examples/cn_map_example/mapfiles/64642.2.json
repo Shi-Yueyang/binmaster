@@ -21,5 +21,82 @@
   "balise_addr_offset": 151,
   "signal_addr_offset": 1555,
   "track_addr_offset": 1707,
-  "fix_points": []
+  "fix_points": [
+    {
+      "point_type": 1,
+      "neighbor_addr_offset": 151,
+      "tsrs_id": 150765569,
+      "near_station_id": 64641,
+      "near_station_boundary_type": 254,
+      "near_station_track_id": 1,
+      "location": 0,
+      "track_id": 1
+    },
+    {
+      "point_type": 254,
+      "neighbor_addr_offset": 1074,
+      "tsrs_id": 150765569,
+      "near_station_id": 64643,
+      "near_station_boundary_type": 1,
+      "near_station_track_id": 1,
+      "location": 1047192,
+      "track_id": 1
+    },
+    {
+      "point_type": 6,
+      "track_id": 1,
+      "direction": 1,
+      "tip_position": 388957,
+      "positioning_position": 388957,
+      "reverse_position": 0,
+      "before_switch_object_data_offest": 1555,
+      "positioning_object_data_offest": 79,
+      "reverse_object_data_offest": 1631,
+      "turnout_track": 1,
+      "positioning_track": 1,
+      "reverse_track": 3
+    },
+    {
+      "point_type": 6,
+      "track_id": 3,
+      "direction": 1,
+      "tip_position": 393985,
+      "positioning_position": 393985,
+      "reverse_position": 0,
+      "before_switch_object_data_offest": 55,
+      "positioning_object_data_offest": 1574,
+      "reverse_object_data_offest": 1669,
+      "turnout_track": 1,
+      "positioning_track": 1,
+      "reverse_track": 5
+    },
+    {
+      "point_type": 6,
+      "track_id": 2,
+      "direction": 0,
+      "tip_position": 522829,
+      "positioning_position": 522829,
+      "reverse_position": 128882,
+      "before_switch_object_data_offest": 1612,
+      "positioning_object_data_offest": 127,
+      "reverse_object_data_offest": 1688,
+      "turnout_track": 1,
+      "positioning_track": 1,
+      "reverse_track": 5
+    },
+    {
+      "point_type": 6,
+      "track_id": 4,
+      "direction": 0,
+      "tip_position": 517791,
+      "positioning_position": 128874,
+      "reverse_position": 517791,
+      "before_switch_object_data_offest": 103,
+      "positioning_object_data_offest": 1650,
+      "reverse_object_data_offest": 1593,
+      "turnout_track": 1,
+      "positioning_track": 3,
+      "reverse_track": 1
+    }
+  ]
 }

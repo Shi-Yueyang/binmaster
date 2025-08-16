@@ -1,0 +1,186 @@
+{
+  "file_type": 2,
+  "structure_version": 1,
+  "data_version": 2,
+  "station_id": 64645,
+  "bos_cnt": 2,
+  "boses": [
+    {
+      "bos_near_track_id": 1,
+      "bos_near_addr_offset": 29
+    },
+    {
+      "bos_near_track_id": 5,
+      "bos_near_addr_offset": 45
+    }
+  ],
+  "eos_cnt": 2,
+  "eoses": [
+    {
+      "eos_near_track_id": 1,
+      "eos_near_addr_offset": 61
+    },
+    {
+      "eos_near_track_id": 3,
+      "eos_near_addr_offset": 77
+    }
+  ],
+  "switch_addr_offset": 93,
+  "balise_addr_offset": 285,
+  "signal_addr_offset": 1790,
+  "track_addr_offset": 1980,
+  "fix_points": [
+    {
+      "point_type": 1,
+      "neighbor_addr_offset": 285,
+      "tsrs_id": 150765569,
+      "near_station_id": 64644,
+      "near_station_boundary_type": 254,
+      "near_station_track_id": 1,
+      "location": 0,
+      "track_id": 1
+    },
+    {
+      "point_type": 1,
+      "neighbor_addr_offset": 117,
+      "tsrs_id": 0,
+      "near_station_id": 0,
+      "near_station_boundary_type": 85,
+      "near_station_track_id": 0,
+      "location": 0,
+      "track_id": 5
+    },
+    {
+      "point_type": 254,
+      "neighbor_addr_offset": 1216,
+      "tsrs_id": 150765569,
+      "near_station_id": 64646,
+      "near_station_boundary_type": 1,
+      "near_station_track_id": 1,
+      "location": 987905,
+      "track_id": 1
+    },
+    {
+      "point_type": 254,
+      "neighbor_addr_offset": 261,
+      "tsrs_id": 0,
+      "near_station_id": 0,
+      "near_station_boundary_type": 85,
+      "near_station_track_id": 0,
+      "location": 125298,
+      "track_id": 3
+    },
+    {
+      "point_type": 6,
+      "track_id": 1,
+      "direction": 1,
+      "tip_position": 397456,
+      "positioning_position": 397456,
+      "reverse_position": 0,
+      "before_switch_object_data_offest": 1790,
+      "positioning_object_data_offest": 141,
+      "reverse_object_data_offest": 117,
+      "turnout_track": 1,
+      "positioning_track": 1,
+      "reverse_track": 9
+    },
+    {
+      "point_type": 6,
+      "track_id": 3,
+      "direction": 0,
+      "tip_position": 9591,
+      "positioning_position": 9591,
+      "reverse_position": 8871,
+      "before_switch_object_data_offest": 165,
+      "positioning_object_data_offest": 45,
+      "reverse_object_data_offest": 93,
+      "turnout_track": 5,
+      "positioning_track": 5,
+      "reverse_track": 9
+    },
+    {
+      "point_type": 6,
+      "track_id": 5,
+      "direction": 1,
+      "tip_position": 403741,
+      "positioning_position": 0,
+      "reverse_position": 403741,
+      "before_switch_object_data_offest": 93,
+      "positioning_object_data_offest": 1866,
+      "reverse_object_data_offest": 1809,
+      "turnout_track": 1,
+      "positioning_track": 3,
+      "reverse_track": 1
+    },
+    {
+      "point_type": 6,
+      "track_id": 7,
+      "direction": 1,
+      "tip_position": 11096,
+      "positioning_position": 11096,
+      "reverse_position": 0,
+      "before_switch_object_data_offest": 117,
+      "positioning_object_data_offest": 1904,
+      "reverse_object_data_offest": 1942,
+      "turnout_track": 5,
+      "positioning_track": 5,
+      "reverse_track": 7
+    },
+    {
+      "point_type": 6,
+      "track_id": 2,
+      "direction": 0,
+      "tip_position": 532970,
+      "positioning_position": 532970,
+      "reverse_position": 136271,
+      "before_switch_object_data_offest": 1847,
+      "positioning_object_data_offest": 237,
+      "reverse_object_data_offest": 213,
+      "turnout_track": 1,
+      "positioning_track": 1,
+      "reverse_track": 5
+    },
+    {
+      "point_type": 6,
+      "track_id": 4,
+      "direction": 0,
+      "tip_position": 129899,
+      "positioning_position": 129899,
+      "reverse_position": 118856,
+      "before_switch_object_data_offest": 189,
+      "positioning_object_data_offest": 1923,
+      "reverse_object_data_offest": 1961,
+      "turnout_track": 5,
+      "positioning_track": 5,
+      "reverse_track": 7
+    },
+    {
+      "point_type": 6,
+      "track_id": 6,
+      "direction": 0,
+      "tip_position": 527943,
+      "positioning_position": 527943,
+      "reverse_position": 8502,
+      "before_switch_object_data_offest": 189,
+      "positioning_object_data_offest": 1828,
+      "reverse_object_data_offest": 261,
+      "turnout_track": 1,
+      "positioning_track": 1,
+      "reverse_track": 11
+    },
+    {
+      "point_type": 6,
+      "track_id": 8,
+      "direction": 1,
+      "tip_position": 115735,
+      "positioning_position": 115735,
+      "reverse_position": 0,
+      "before_switch_object_data_offest": 1885,
+      "positioning_object_data_offest": 77,
+      "reverse_object_data_offest": 237,
+      "turnout_track": 3,
+      "positioning_track": 3,
+      "reverse_track": 11
+    }
+  ]
+}

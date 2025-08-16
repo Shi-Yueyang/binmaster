@@ -20,6 +20,7 @@ import crcmod
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Union, BinaryIO
 from dataclasses import dataclass
+from expression_evaluator import ExpressionEvaluator, ExpressionError
 
 
 
@@ -175,6 +176,7 @@ class BinaryFormatHandler:
         self.field_offsets: Dict[str, int] = {}
         self.field_sizes: Dict[str, int] = {}
         self.scope_resolver = None
+        self.expression_evaluator = ExpressionEvaluator(self._get_nested_value)
         
     def _load_format_definition(self, format_file: str) -> Dict[str, Any]:
         """Load and validate format definition from JSON file."""
@@ -217,7 +219,7 @@ class BinaryFormatHandler:
         elif field.type == 'array' and 'element_type' in field_def:
             # For arrays, create a virtual field representing the element type
             element_def = {
-                'name': 'element',
+                'name': '#',
                 'type': field_def['element_type']
             }
             if 'element_fields' in field_def:
@@ -257,21 +259,21 @@ class BinaryFormatHandler:
         except Exception as e:
             raise BinaryFormatError(f"Serialization failed: {e}")
         
-    def _serialize_phase1(self, f: BinaryIO, field_defs: List[Dict[str, Any]], data: Dict[str, Any]) -> None:
+    def _serialize_phase1(self, f: BinaryIO, field_defs: List[Dict[str, Any]], context: Dict[str, Any]) -> None:
         """Phase 1: Serialize structure with placeholders."""
         for field_def in field_defs:
             field = self._parse_field_definition(field_def)
-            
+ 
             # Check conditions
-            if not self._evaluate_condition(field.condition, data):
+            if field.condition is not None and not eval(field.condition, {}, {'context': context, 'data': context}):
                 continue
             
-            if field.name not in data:
+            if field.name not in context:
                 raise BinaryFormatError(f"Missing field in data: {field.name}")
-            if field.type not in self.TYPE_MAP and field.type not in ['string', 'array', 'struct']:
+            if field.type not in self.TYPE_MAP and field.type not in ['uint24','int24','string', 'array', 'struct','union']:
                 raise BinaryFormatError(f"Unsupported field type: {field.type}")
 
-            value = data[field.name]
+            value = context[field.name]
             start_offset = f.tell()
             self.field_offsets[field.name] = start_offset
             
@@ -283,13 +285,12 @@ class BinaryFormatHandler:
                 self.field_sizes[field.name] = struct.calcsize(format_str)
             # Regular field serialization
             else:
-                value = data[field.name]
-                self._serialize_field(f, field, value, data)
+                value = context[field.name]
+                self._serialize_field(f, field, value, context)
                 # Record field size
                 end_offset = f.tell()
                 self.field_sizes[field.name] = end_offset - start_offset
 
-    
     def _serialize_phase2(self, data: bytes, context: Dict[str, Any]) -> bytes:
         """Phase 2: Calculate and update calculated fields."""
         data_array = bytearray(data)
@@ -362,12 +363,14 @@ class BinaryFormatHandler:
         
         else:
             raise BinaryFormatError(f"Unknown function: {field.function}")
-    
-    def _serialize_fields(self, f: BinaryIO, fields: List[FieldDefinition], data: Dict[str, Any]) -> None:
+
+    def _serialize_fields(self, f: BinaryIO, fields: List[FieldDefinition], data: Dict[str, Any], context: Dict[str, Any]) -> None:
         """Serialize a list of fields to binary stream."""
         for field in fields:
             # Check if field should be included based on condition
-            if not self._evaluate_condition(field.condition, data):
+            if field.condition is not None:
+                pass
+            if field.condition and not eval(field.condition, {}, {'context': context,'data': data}):
                 continue
             
             # Skip functional fields in simple serialization - they should use two-phase
@@ -382,7 +385,7 @@ class BinaryFormatHandler:
                 raise BinaryFormatError(f"Missing field in data: {field.name}")
                 
             value = data[field.name]
-            self._serialize_field(f, field, value, data)
+            self._serialize_field(f, field, value, context)
     
     def _serialize_field(self, f: BinaryIO, field: FieldDefinition, value: Any, context: Dict[str, Any]) -> None:
         """Serialize a single field to binary stream."""
@@ -416,7 +419,7 @@ class BinaryFormatHandler:
             # Write array length if not fixed
             if field.length_field:
                 # Length is determined by another field (support dot notation)
-                array_length = self._get_nested_value(context, field.length_field)
+                array_length = eval(field.length_field, {}, {'context': context})
                 if array_length is None:
                     raise BinaryFormatError(f"Length field {field.length_field} not found for array {field.name}")
             elif field.size:
@@ -440,7 +443,7 @@ class BinaryFormatHandler:
             # Nested structure
             if not isinstance(value, dict):
                 raise BinaryFormatError(f"Expected dict for struct field {field.name}")
-            self._serialize_fields(f, field.fields, value)
+            self._serialize_fields(f, field.fields, value, context)
         elif field.type == 'union':
             if not isinstance(value,dict):
                 raise BinaryFormatError(f"Expected dict for union field {field.name}")
@@ -451,7 +454,7 @@ class BinaryFormatHandler:
             if variant_key not in field.union_variants:
                 raise BinaryFormatError(f"Unknown union variant '{variant_key}' for field {field.name}")
             variant_fields = field.union_variants[variant_key]
-            self._serialize_fields(f,variant_fields,value)
+            self._serialize_fields(f,variant_fields,value,context)
             
         else:
             raise BinaryFormatError(f"Unsupported field type: {field.type}")
@@ -468,108 +471,130 @@ class BinaryFormatHandler:
         """
         try:
             with open(input_file, 'rb') as f:
-                fields = [self._parse_field_definition(field_def) 
-                         for field_def in self.format_json_dict['fields']]
-                return self._deserialize_fields(f, fields)
+                fields = [self._parse_field_definition(field_def) for field_def in self.format_json_dict['fields']]
+                result = {}
+                self._deserialize_fields(f, fields,result,'')
+                return result
                 
         except Exception as e:
             raise BinaryFormatError(f"Deserialization failed: {e}")
     
-    def _deserialize_fields(self, f: BinaryIO, fields: List[FieldDefinition]) -> Dict[str, Any]:
+    def _deserialize_fields(self, f: BinaryIO, fields: List[FieldDefinition], context:Dict[str,Any]=None,path: str = '') -> Dict[str, Any]:
         """Deserialize a list of fields from binary stream."""
-        result = {}
         for field in fields:
             # Check if field should be included based on condition
-            if not self._evaluate_condition(field.condition, result):
+            if field.condition is not None:
+                pass
+            data = self._get_nested_value(context, path)
+            if field.condition and not eval(field.condition,{}, {'context': context,'data': data}):
                 continue
-                
-            result[field.name] = self._deserialize_field(f, field, result)
-        return result
+            self._deserialize_field(f, field, context,path)
     
     def _get_nested_value(self, data: Dict[str, Any], path: str) -> Any:
         """Get a value from nested dictionary using dot notation."""
-        keys = path.split('.')
+        parts = path.split('.')
+        parts = [part.strip() for part in parts if part.strip()]  # Remove empty parts
         value = data
-        for key in keys:
-            if isinstance(value, dict) and key in value:
-                value = value[key]
+        for part in parts:
+            if '[' in part and part.endswith(']'):
+                field_name = part[:part.index('[')]
+                index_part = part[part.index('[')+1:-1]
+                if isinstance(value,dict) and field_name in value:
+                    array_value = value[field_name]
+                else:
+                    return None
+                
+                if not isinstance(array_value, list):
+                    return None
+                
+                index = int(index_part)
+                try:
+                    value = array_value[index]
+                except IndexError:
+                    value = None
+
             else:
-                return None
+                if isinstance(value, dict) and part in value:
+                    value = value[part]
+                else:
+                    return None
         return value
 
-    def _evaluate_condition(self, condition: str, context: Dict[str, Any]) -> bool:
-        """Evaluate a condition string against the current context."""
-        if not condition:
-            return True
-            
-        # Simple condition parsing for expressions like "field > 0"
-        # You can extend this to support more complex conditions
-        operators = ['>=', '<=', '==', '!=', '>', '<']  # Order matters for proper parsing
-        
-        for op in operators:
-            if op in condition:
-                left, right = condition.split(op, 1)
-                left = left.strip()
-                right = right.strip()
-                
-                # Get left value from context
-                left_value = self._get_nested_value(context, left)
-                if left_value is None:
-                    return False
-                
-                # Parse right value (could be number or another field)
-                try:
-                    right_value = int(right)
-                except ValueError:
-                    try:
-                        right_value = float(right)
-                    except ValueError:
-                        # Assume it's a field reference
-                        right_value = self._get_nested_value(context, right)
-                        if right_value is None:
-                            return False
-                
-                # Evaluate condition
-                if op == '>':
-                    return left_value > right_value
-                elif op == '<':
-                    return left_value < right_value
-                elif op == '>=':
-                    return left_value >= right_value
-                elif op == '<=':
-                    return left_value <= right_value
-                elif op == '==':
-                    return left_value == right_value
-                elif op == '!=':
-                    return left_value != right_value
+    def _write_nested_value(self, data: Dict[str, Any], path: str, value: Any) -> None:
+        """Set a value in a nested dictionary using dot notation."""
+        parts = path.split('.')
+        current = data
+        for i,part in enumerate(parts):
+            if '[' in part and part.endswith(']'):
+                field_name = part[:part.index('[')]
+                index_part = part[part.index('[')+1:-1]
+                if field_name not in current or not isinstance(current[field_name], list):
+                    current[field_name] = []
                     
-        return True
+                index = int(index_part)
+                if i == len(parts) - 1:
+                    while len(current[field_name]) <= index:
+                        current[field_name].append(None)
+                    current[field_name][index] = value
+                    return
+                else:
+                    while len(current[field_name]) <= index:
+                        current[field_name].append({})
+                    current = current[field_name][index]
+            else:
+                if i == len(parts) - 1:
+                    current[part] = value
+                    return
+                if part not in current or not isinstance(current[part], dict):
+                    current[part] = {}
+                current = current[part]
+        
     
-    def _deserialize_field(self, f: BinaryIO, field: FieldDefinition, context: Dict[str, Any]) -> Any:
+    def _deserialize_field(self, f: BinaryIO, field: FieldDefinition, context: Dict[str, Any], path: str = '') -> Any:
         """Deserialize a single field from binary stream."""
         if field.type in self.TYPE_MAP:
             # Basic numeric type
+            if field.name != '#':
+                path += field.name
             format_str = self.endian_char + self.TYPE_MAP[field.type]
             size = struct.calcsize(format_str)
             data = f.read(size)
             if len(data) < size:
                 raise BinaryFormatError(f"Unexpected end of file reading {field.name}")
-            return struct.unpack(format_str, data)[0]
+            result = struct.unpack(format_str, data)[0]
+            self._write_nested_value(context, path, result)
+            
         elif field.type == 'int24':
             # Read 3 bytes for int24
+            path += field.name
             data = f.read(3)
             if len(data) < 3:
                 raise BinaryFormatError(f"Unexpected end of file reading {field.name}")
-            return struct.unpack(self.endian_char + 'i', data + b'\x00')[0]
+            
+            result =  struct.unpack(self.endian_char + 'i', data + b'\x00')[0]
+            self._write_nested_value(context, path, result)
+            
+        elif field.type == 'uint24':
+            # Read 3 bytes for uint24
+            path += field.name
+            data = f.read(3)
+            if len(data) < 3:
+                raise BinaryFormatError(f"Unexpected end of file reading {field.name}")
+            result = struct.unpack(self.endian_char + 'I', data + b'\x00')[0]
+            self._write_nested_value(context, path, result)
+            
         elif field.type == 'string':
             # String type
+            path += field.name
             if field.size:
                 # Fixed-size string
                 data = f.read(field.size)
                 if len(data) < field.size:
                     raise BinaryFormatError(f"Unexpected end of file reading {field.name}")
                 # Remove null padding
-                return data.rstrip(b'\x00').decode(field.encoding, errors='replace')
+                result = data.rstrip(b'\x00').decode(field.encoding, errors='replace')
+                self._write_nested_value(context, path, result)
+                
             else:
                 # Variable-size string (read length first)
                 length_format = self.endian_char + 'I'
@@ -582,13 +607,15 @@ class BinaryFormatHandler:
                 data = f.read(length)
                 if len(data) < length:
                     raise BinaryFormatError(f"Unexpected end of file reading {field.name}")
-                return data.decode(field.encoding, errors='replace')
+                result = data.decode(field.encoding, errors='replace')
+                self._write_nested_value(context, path, result)
                 
         elif field.type == 'array':
             # Array type
             if field.length_field:
                 # Length is determined by another field (support dot notation)
-                array_length = self._get_nested_value(context, field.length_field)
+                
+                array_length = eval(field.length_field, {}, {'context': context})
                 if array_length is None:
                     raise BinaryFormatError(f"Length field {field.length_field} not found for array {field.name}")
             elif field.size:
@@ -596,36 +623,63 @@ class BinaryFormatHandler:
             else:
                 raise BinaryFormatError(f"Array field {field.name} must have either size or length_field defined")
             # Deserialize array elements
-            result = []
             element_field = field.fields[0] if field.fields else None
-            if array_length > 0:
-                for _ in range(array_length):
-                    element = self._deserialize_field(f, element_field, context)
-                    result.append(element)
+            if array_length >= 0:
+                for i in range(array_length):
+                    self._deserialize_field(f, element_field, context,path+field.name+f"[{i}]")
             else:
+                i = 0
                 while True:
+                    i += 1
                     try:
-                        element = self._deserialize_field(f, element_field, context)
-                        result.append(element)
+                        self._deserialize_field(f, element_field, context, path + field.name + f"[{i}]")
                     except BinaryFormatError:
+                        print(f"Warning: Unexpected end of file while reading array {field.name}")
+                        print(f"file size: {f.tell()}, real size: {f.seek(0, io.SEEK_END)}")
                         break
-            return result
-            
+        
         elif field.type == 'struct':
             # Nested structure
-            return self._deserialize_fields(f, field.fields)
+            if field.name != '#':
+                self._deserialize_fields(f, field.fields, context, path + '.' + field.name + '.')
+            else:
+                self._deserialize_fields(f, field.fields, context, path + '.')
+                
         elif field.type == 'union':
-            discriminator_value = self._get_nested_value(context,field.discriminator_field)
-            if discriminator_value is None:
-                raise BinaryFormatError(f"Discriminator field '{field.discriminator_field}' not found for union {field.name}")
             first_key = next(iter(field.union_variants))
             first_union_variant = field.union_variants[first_key]
-            discriminator_type = first_union_variant[0]
-            pass
+            discriminator_type = first_union_variant[0].get('type', 'uint8')
+            
+            if discriminator_type not in self.TYPE_MAP:
+                print("Warning: Unsupported discriminator type:", discriminator_type)
+                raise BinaryFormatError(f"Unsupported discriminator type: {discriminator_type}")
+            discriminator_format = self.endian_char + self.TYPE_MAP[discriminator_type]
+            discriminator_size = struct.calcsize(discriminator_format)
+            discriminator_data = f.read(discriminator_size)
+            if len(discriminator_data) < discriminator_size:
+                print("Warning: Unexpected end of file while reading discriminator for union", field.name)
+                raise BinaryFormatError(f"Unexpected end of file reading discriminator for union {field.name}")
+            discriminator_value = struct.unpack(discriminator_format, discriminator_data)[0]
+            f.seek(-discriminator_size, io.SEEK_CUR)  # Rewind to read union variant
+            struct_fields = field.union_variants.get(str(discriminator_value), None)
+            if struct_fields is None:
+                print("Warning: No matching union variant found for discriminator value:", discriminator_value)
+                raise BinaryFormatError(f"Unknown union variant '{discriminator_value}' for field {field.name}")
+            
+            print(f"discriminator_value: {discriminator_value}")
+            struct_field = self._parse_field_definition({
+                'name': field.name,
+                'type': 'struct',
+                'fields': struct_fields
+            })
+            if discriminator_value == 51:
+                pass
+            self._deserialize_field(f, struct_field, context, path)
+            
         else:
+            print("Warning: Unsupported field type:", field.type)
             raise BinaryFormatError(f"Unsupported field type: {field.type}")
-
-
+    
 def main():
     """Example usage of the BinaryFormatHandler."""
     # Example format definition

@@ -19,7 +19,7 @@
     {
       "name": "stations",
       "type": "array",
-      "length_field": "station_cnt",
+      "length_field": "context['station_cnt']",
       "element_type": "struct",
       "element_fields": [
         { "name": "station_id", "type": "uint16" },
@@ -39,13 +39,13 @@
         {
           "name": "lowbound_station_id",
           "type": "uint16",
-          "condition": "lowbound_station_cnt > 0"
+          "condition": "data['lowbound_station_cnt'] > 0"
         },
         { "name": "highound_station_cnt", "type": "uint8" },
         {
           "name": "highound_station_id",
           "type": "uint16",
-          "condition": "highound_station_cnt > 0"
+          "condition": "data['highound_station_cnt'] > 0"
         },
         { "name": "geo_file_size", "type": "uint16" },
         { "name": "geo_file_crc", "type": "uint32" },
