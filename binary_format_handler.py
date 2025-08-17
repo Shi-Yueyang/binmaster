@@ -20,7 +20,6 @@ import crcmod
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Union, BinaryIO
 from dataclasses import dataclass
-from expression_evaluator import ExpressionEvaluator, ExpressionError
 
 
 
@@ -176,7 +175,6 @@ class BinaryFormatHandler:
         self.field_offsets: Dict[str, int] = {}
         self.field_sizes: Dict[str, int] = {}
         self.scope_resolver = None
-        self.expression_evaluator = ExpressionEvaluator(self._get_nested_value)
         
     def _load_format_definition(self, format_file: str) -> Dict[str, Any]:
         """Load and validate format definition from JSON file."""
@@ -666,7 +664,6 @@ class BinaryFormatHandler:
                 print("Warning: No matching union variant found for discriminator value:", discriminator_value)
                 raise BinaryFormatError(f"Unknown union variant '{discriminator_value}' for field {field.name}")
             
-            print(f"discriminator_value: {discriminator_value}")
             struct_field = self._parse_field_definition({
                 'name': field.name,
                 'type': 'struct',

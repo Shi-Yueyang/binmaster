@@ -1,0 +1,561 @@
+{
+  "file_type": 2,
+  "structure_version": 1,
+  "data_version": 2,
+  "station_id": 64646,
+  "bos_cnt": 1,
+  "boses": [
+    {
+      "bos_near_track_id": 1,
+      "bos_near_addr_offset": 26
+    }
+  ],
+  "eos_cnt": 2,
+  "eoses": [
+    {
+      "eos_near_track_id": 1,
+      "eos_near_addr_offset": 42
+    },
+    {
+      "eos_near_track_id": 7,
+      "eos_near_addr_offset": 58
+    }
+  ],
+  "switch_addr_offset": 74,
+  "balise_addr_offset": 146,
+  "signal_addr_offset": 1519,
+  "track_addr_offset": 1633,
+  "fix_points": [
+    {},
+    {
+      "point_type": 1,
+      "neighbor_addr_offset": 146,
+      "tsrs_id": 150765569,
+      "near_station_id": 64645,
+      "near_station_boundary_type": 254,
+      "near_station_track_id": 1,
+      "location": 0,
+      "track_id": 1
+    },
+    {
+      "point_type": 254,
+      "neighbor_addr_offset": 1134,
+      "tsrs_id": 150765569,
+      "near_station_id": 64647,
+      "near_station_boundary_type": 1,
+      "near_station_track_id": 1,
+      "location": 998448,
+      "track_id": 1
+    },
+    {
+      "point_type": 254,
+      "neighbor_addr_offset": 98,
+      "tsrs_id": 0,
+      "near_station_id": 0,
+      "near_station_boundary_type": 85,
+      "near_station_track_id": 0,
+      "location": 8445,
+      "track_id": 7
+    },
+    {
+      "point_type": 6,
+      "track_id": 1,
+      "direction": 1,
+      "tip_position": 456246,
+      "positioning_position": 456246,
+      "reverse_position": 0,
+      "before_switch_object_data_offest": 1519,
+      "positioning_object_data_offest": 98,
+      "reverse_object_data_offest": 1595,
+      "turnout_track": 1,
+      "positioning_track": 1,
+      "reverse_track": 3
+    },
+    {
+      "point_type": 6,
+      "track_id": 3,
+      "direction": 1,
+      "tip_position": 461271,
+      "positioning_position": 461271,
+      "reverse_position": 0,
+      "before_switch_object_data_offest": 74,
+      "positioning_object_data_offest": 1538,
+      "reverse_object_data_offest": 58,
+      "turnout_track": 1,
+      "positioning_track": 1,
+      "reverse_track": 7
+    },
+    {
+      "point_type": 6,
+      "track_id": 2,
+      "direction": 0,
+      "tip_position": 585057,
+      "positioning_position": 128847,
+      "reverse_position": 585057,
+      "before_switch_object_data_offest": 1576,
+      "positioning_object_data_offest": 1614,
+      "reverse_object_data_offest": 1557,
+      "turnout_track": 1,
+      "positioning_track": 3,
+      "reverse_track": 1
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 26,
+      "next_object_offset": 445,
+      "balise_id": 16549377,
+      "data_size": 118,
+      "balise_property": 130,
+      "balise_position": 806,
+      "balise_track": 1,
+      "balise_cnt": 64,
+      "balise_message": [
+        144, 4, 127, 254, 67, 0, 193, 80, 54, 33, 130, 131, 1, 225, 66, 24, 44,
+        48, 46, 20, 85, 9, 50, 0, 2, 8, 160, 29, 192, 64, 68, 192, 32, 81, 80,
+        48, 112, 128, 32, 100, 0, 0, 62, 128, 16, 87, 144, 16, 200, 0, 32, 92,
+        144, 64, 53, 159, 241, 180, 10, 200, 0, 2, 0, 4, 222, 23, 240, 18, 16,
+        86, 32, 46, 135, 210, 40, 95, 255, 208, 40, 0, 169, 76, 93, 184, 189,
+        70, 113, 92, 232, 177, 2, 216, 57, 2, 34, 70, 32, 200, 5, 8, 127, 255
+      ]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 26,
+      "next_object_offset": 445,
+      "balise_id": 16549377,
+      "data_size": 113,
+      "balise_property": 130,
+      "balise_position": 1306,
+      "balise_track": 1,
+      "balise_cnt": 65,
+      "balise_message": [
+        144, 20, 127, 254, 67, 0, 193, 64, 54, 33, 131, 130, 140, 161, 66, 24,
+        48, 40, 186, 20, 84, 8, 114, 0, 0, 8, 144, 57, 208, 48, 100, 0, 64, 114,
+        48, 32, 68, 192, 32, 75, 0, 16, 96, 64, 0, 235, 16, 64, 106, 64, 64, 44,
+        143, 241, 176, 10, 200, 0, 2, 0, 4, 224, 111, 240, 18, 0, 78, 32, 46,
+        215, 210, 46, 127, 255, 208, 32, 0, 170, 67, 181, 122, 17, 109, 64, 176,
+        2, 216, 56, 2, 34, 70, 72, 200, 5, 8, 127, 255
+      ]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 26,
+      "next_object_offset": 445,
+      "balise_id": 16549377,
+      "data_size": 68,
+      "balise_property": 130,
+      "balise_position": 1806,
+      "balise_track": 1,
+      "balise_cnt": 66,
+      "balise_message": [
+        144, 36, 127, 254, 67, 0, 211, 224, 40, 161, 128, 64, 0, 66, 218, 248,
+        5, 144, 34, 65, 144, 28, 191, 144, 0, 53, 141, 134, 249, 53, 141, 135,
+        25, 82, 200, 17, 136, 56, 14, 171, 249, 0, 3, 88, 216, 110, 203, 88,
+        216, 112, 205, 255
+      ]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 146,
+      "next_object_offset": 461,
+      "balise_id": 16549379,
+      "data_size": 16,
+      "balise_property": 129,
+      "balise_position": 155406,
+      "balise_track": 1,
+      "balise_cnt": 32
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 445,
+      "next_object_offset": 477,
+      "balise_id": 16549381,
+      "data_size": 16,
+      "balise_property": 129,
+      "balise_position": 310106,
+      "balise_track": 1,
+      "balise_cnt": 32
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 461,
+      "next_object_offset": 734,
+      "balise_id": 16549383,
+      "data_size": 73,
+      "balise_property": 130,
+      "balise_position": 426106,
+      "balise_track": 1,
+      "balise_cnt": 64,
+      "balise_message": [
+        144, 4, 127, 254, 67, 3, 193, 80, 34, 160, 50, 3, 4, 225, 64, 42, 130,
+        89, 0, 0, 1, 32, 5, 88, 8, 100, 0, 16, 46, 72, 32, 26, 207, 248, 218, 5,
+        100, 0, 1, 0, 2, 44, 151, 248, 5, 136, 22, 193, 200, 17, 16, 29, 102,
+        64, 40, 67, 255
+      ]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 461,
+      "next_object_offset": 734,
+      "balise_id": 16549383,
+      "data_size": 116,
+      "balise_property": 130,
+      "balise_position": 426606,
+      "balise_track": 1,
+      "balise_cnt": 65,
+      "balise_message": [
+        144, 20, 127, 254, 67, 3, 193, 64, 54, 33, 34, 3, 2, 161, 66, 24, 44,
+        48, 26, 20, 84, 12, 50, 0, 0, 0, 224, 76, 224, 0, 62, 144, 32, 100, 0,
+        64, 112, 144, 32, 81, 80, 64, 68, 192, 64, 87, 144, 48, 100, 0, 64, 114,
+        48, 32, 68, 192, 32, 75, 0, 16, 96, 64, 0, 235, 16, 64, 3, 63, 241, 176,
+        10, 200, 0, 2, 0, 5, 64, 111, 240, 17, 0, 32, 161, 157, 194, 76, 4, 5,
+        128, 22, 193, 192, 17, 20, 69, 230, 64, 40, 67, 255
+      ]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 461,
+      "next_object_offset": 734,
+      "balise_id": 16549383,
+      "data_size": 68,
+      "balise_property": 130,
+      "balise_position": 427106,
+      "balise_track": 1,
+      "balise_cnt": 66,
+      "balise_message": [
+        144, 36, 127, 254, 67, 3, 211, 224, 40, 161, 129, 192, 0, 67, 29, 108,
+        5, 144, 34, 65, 144, 28, 191, 144, 0, 53, 141, 134, 249, 53, 141, 135,
+        25, 82, 200, 17, 136, 56, 14, 171, 249, 0, 3, 88, 216, 110, 203, 88,
+        216, 112, 205, 255
+      ]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 477,
+      "next_object_offset": 1519,
+      "balise_id": 16549385,
+      "data_size": 16,
+      "balise_property": 129,
+      "balise_position": 446106,
+      "balise_track": 1,
+      "balise_cnt": 32
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 1538,
+      "next_object_offset": 766,
+      "balise_id": 16549387,
+      "data_size": 16,
+      "balise_property": 129,
+      "balise_position": 473762,
+      "balise_track": 1,
+      "balise_cnt": 32
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 750,
+      "next_object_offset": 790,
+      "balise_id": 16549389,
+      "data_size": 24,
+      "balise_property": 128,
+      "balise_position": 498262,
+      "balise_track": 1,
+      "balise_cnt": 0,
+      "balise_message": [144, 0, 127, 254, 67, 6, 255, 255]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 766,
+      "next_object_offset": 814,
+      "balise_id": 16549391,
+      "data_size": 24,
+      "balise_property": 128,
+      "balise_position": 522762,
+      "balise_track": 1,
+      "balise_cnt": 0,
+      "balise_message": [144, 0, 127, 254, 67, 7, 255, 255]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 790,
+      "next_object_offset": 838,
+      "balise_id": 16549393,
+      "data_size": 24,
+      "balise_property": 128,
+      "balise_position": 547262,
+      "balise_track": 1,
+      "balise_cnt": 0,
+      "balise_message": [144, 0, 127, 254, 67, 8, 255, 255]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 814,
+      "next_object_offset": 1557,
+      "balise_id": 16549395,
+      "data_size": 16,
+      "balise_property": 129,
+      "balise_position": 571976,
+      "balise_track": 1,
+      "balise_cnt": 32
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 1576,
+      "next_object_offset": 870,
+      "balise_id": 16549397,
+      "data_size": 16,
+      "balise_property": 129,
+      "balise_position": 593429,
+      "balise_track": 1,
+      "balise_cnt": 32
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 854,
+      "next_object_offset": 1118,
+      "balise_id": 16549399,
+      "data_size": 99,
+      "balise_property": 130,
+      "balise_position": 613429,
+      "balise_track": 1,
+      "balise_cnt": 64,
+      "balise_message": [
+        144, 4, 127, 254, 67, 11, 193, 80, 54, 33, 38, 3, 12, 225, 66, 27, 184,
+        48, 222, 20, 85, 9, 242, 0, 0, 4, 176, 67, 208, 64, 70, 16, 48, 118,
+        192, 64, 161, 64, 0, 101, 64, 16, 87, 144, 48, 93, 192, 64, 100, 16, 16,
+        75, 0, 16, 93, 192, 0, 149, 207, 241, 180, 10, 200, 0, 2, 0, 5, 23, 183,
+        240, 11, 16, 45, 131, 144, 34, 39, 189, 140, 128, 80, 135, 255
+      ]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 854,
+      "next_object_offset": 1118,
+      "balise_id": 16549399,
+      "data_size": 81,
+      "balise_property": 130,
+      "balise_position": 613929,
+      "balise_track": 1,
+      "balise_cnt": 65,
+      "balise_message": [
+        144, 20, 127, 254, 67, 11, 193, 64, 34, 160, 50, 3, 10, 161, 64, 42, 2,
+        89, 0, 1, 1, 32, 12, 96, 8, 100, 0, 0, 43, 192, 0, 21, 71, 248, 216, 5,
+        100, 0, 1, 0, 2, 44, 91, 248, 8, 128, 16, 81, 68, 145, 38, 2, 2, 192,
+        11, 96, 224, 8, 136, 14, 99, 32, 20, 33, 255
+      ]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 854,
+      "next_object_offset": 1118,
+      "balise_id": 16549399,
+      "data_size": 68,
+      "balise_property": 130,
+      "balise_position": 614429,
+      "balise_track": 1,
+      "balise_cnt": 66,
+      "balise_message": [
+        144, 36, 127, 254, 67, 11, 211, 224, 40, 161, 133, 192, 0, 67, 58, 216,
+        5, 144, 34, 65, 144, 28, 191, 144, 0, 53, 141, 134, 249, 53, 141, 135,
+        25, 82, 200, 17, 136, 56, 14, 171, 249, 0, 3, 88, 216, 110, 203, 88,
+        216, 112, 205, 255
+      ]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 870,
+      "next_object_offset": 1134,
+      "balise_id": 16549401,
+      "data_size": 16,
+      "balise_property": 129,
+      "balise_position": 731029,
+      "balise_track": 1,
+      "balise_cnt": 32
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 1118,
+      "next_object_offset": 42,
+      "balise_id": 16549403,
+      "data_size": 104,
+      "balise_property": 130,
+      "balise_position": 908429,
+      "balise_track": 1,
+      "balise_cnt": 64,
+      "balise_message": [
+        144, 4, 127, 254, 67, 13, 193, 80, 54, 33, 189, 3, 128, 225, 66, 27,
+        212, 56, 30, 20, 85, 9, 50, 0, 0, 8, 160, 49, 0, 0, 101, 64, 16, 87,
+        144, 48, 93, 192, 64, 100, 16, 16, 75, 0, 16, 93, 192, 0, 231, 80, 32,
+        87, 144, 48, 34, 255, 241, 180, 10, 200, 0, 2, 0, 4, 238, 127, 240, 17,
+        16, 32, 163, 255, 227, 217, 132, 5, 136, 22, 193, 200, 17, 18, 110, 6,
+        64, 40, 67, 255
+      ]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 1118,
+      "next_object_offset": 42,
+      "balise_id": 16549403,
+      "data_size": 109,
+      "balise_property": 130,
+      "balise_position": 908929,
+      "balise_track": 1,
+      "balise_cnt": 65,
+      "balise_message": [
+        144, 20, 127, 254, 67, 13, 193, 64, 54, 33, 187, 131, 12, 161, 66, 18,
+        96, 48, 186, 20, 84, 6, 242, 0, 2, 8, 112, 112, 64, 64, 118, 192, 64,
+        70, 16, 16, 92, 128, 16, 200, 0, 0, 87, 128, 0, 42, 143, 241, 176, 10,
+        200, 0, 2, 0, 4, 180, 231, 240, 18, 0, 86, 32, 5, 167, 210, 40, 95, 255,
+        208, 40, 0, 169, 76, 93, 184, 189, 70, 113, 92, 232, 176, 2, 216, 56, 2,
+        34, 49, 176, 200, 5, 8, 127, 255
+      ]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 1118,
+      "next_object_offset": 42,
+      "balise_id": 16549403,
+      "data_size": 68,
+      "balise_property": 130,
+      "balise_position": 909429,
+      "balise_track": 1,
+      "balise_cnt": 66,
+      "balise_message": [
+        144, 36, 127, 254, 67, 13, 211, 224, 40, 161, 134, 192, 0, 67, 104, 240,
+        5, 144, 34, 65, 144, 28, 191, 144, 0, 53, 141, 134, 249, 53, 141, 135,
+        25, 82, 200, 17, 136, 56, 14, 171, 249, 0, 3, 88, 216, 110, 203, 88,
+        216, 112, 205, 255
+      ]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 1595,
+      "next_object_offset": 1431,
+      "balise_id": 16549447,
+      "data_size": 16,
+      "balise_property": 129,
+      "balise_position": 13016,
+      "balise_track": 3,
+      "balise_cnt": 32
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 1415,
+      "next_object_offset": 1455,
+      "balise_id": 16549449,
+      "data_size": 24,
+      "balise_property": 128,
+      "balise_position": 38716,
+      "balise_track": 3,
+      "balise_cnt": 0,
+      "balise_message": [144, 0, 127, 254, 67, 36, 255, 255]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 1431,
+      "next_object_offset": 1479,
+      "balise_id": 16549451,
+      "data_size": 24,
+      "balise_property": 128,
+      "balise_position": 64416,
+      "balise_track": 3,
+      "balise_cnt": 0,
+      "balise_message": [144, 0, 127, 254, 67, 37, 255, 255]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 1455,
+      "next_object_offset": 1503,
+      "balise_id": 16549453,
+      "data_size": 24,
+      "balise_property": 128,
+      "balise_position": 90116,
+      "balise_track": 3,
+      "balise_cnt": 0,
+      "balise_message": [144, 0, 127, 254, 67, 38, 255, 255]
+    },
+    {
+      "point_type": 51,
+      "previous_object_offset": 1479,
+      "next_object_offset": 1614,
+      "balise_id": 16549455,
+      "data_size": 16,
+      "balise_property": 129,
+      "balise_position": 115769,
+      "balise_track": 3,
+      "balise_cnt": 32
+    },
+    {
+      "point_type": 195,
+      "previous_object_offset": 734,
+      "next_object_offset": 74,
+      "signal_name": "X",
+      "signal_position": 449606,
+      "signal_track": 1,
+      "signel_type": 65
+    },
+    {
+      "point_type": 195,
+      "previous_object_offset": 98,
+      "next_object_offset": 750,
+      "signal_name": "SII",
+      "signal_position": 470762,
+      "signal_track": 1,
+      "signel_type": 130
+    },
+    {
+      "point_type": 195,
+      "previous_object_offset": 838,
+      "next_object_offset": 122,
+      "signal_name": "XII",
+      "signal_position": 575476,
+      "signal_track": 1,
+      "signel_type": 66
+    },
+    {
+      "point_type": 195,
+      "previous_object_offset": 122,
+      "next_object_offset": 854,
+      "signal_name": "S",
+      "signal_position": 590429,
+      "signal_track": 1,
+      "signel_type": 129
+    },
+    {
+      "point_type": 195,
+      "previous_object_offset": 74,
+      "next_object_offset": 1415,
+      "signal_name": "S1",
+      "signal_position": 10016,
+      "signal_track": 3,
+      "signel_type": 130
+    },
+    {
+      "point_type": 195,
+      "previous_object_offset": 1503,
+      "next_object_offset": 122,
+      "signal_name": "X1",
+      "signal_position": 119269,
+      "signal_track": 3,
+      "signel_type": 66
+    },
+    {
+      "point_type": 204,
+      "track_name": "IIG",
+      "track_id": 1,
+      "lowbound_departure_balise_id": 16549387,
+      "lowbound_departure_signal_name": "SII",
+      "highbound_departure_balise_id": 16549395,
+      "highbound_departure_signal_name": "XII"
+    },
+    {
+      "point_type": 204,
+      "track_name": "1G",
+      "track_id": 3,
+      "lowbound_departure_balise_id": 16549447,
+      "lowbound_departure_signal_name": "S1",
+      "highbound_departure_balise_id": 16549455,
+      "highbound_departure_signal_name": "X1"
+    }
+  ]
+}

@@ -18,7 +18,7 @@
     {
       "name": "tracks",
       "type": "array",
-      "length_field": "track_cnt",
+      "length_field": "context['track_cnt']",
       "element_type": "struct",
       "element_fields": [
         { "name": "station_id", "type": "uint8" },
