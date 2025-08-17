@@ -161,14 +161,17 @@ class BinaryFormatHandler:
         'char': 'c'
     }
     
-    def __init__(self, format_file: str):
+    def __init__(self, format_source: Union[str, Dict[str, Any]]):
         """
-        Initialize the handler with a format definition file.
+        Initialize the handler with a format definition.
         
         Args:
-            format_file: Path to JSON file containing format definition
+            format_source: Can be one of:
+                - Path to JSON file containing format definition
+                - JSON string containing format definition
+                - Dictionary containing format definition
         """
-        self.format_json_dict = self._load_format_definition(format_file)
+        self.format_json_dict = self._load_format_definition(format_source)
         self.endianness = self.format_json_dict.get('endianness', 'little')
         self.endian_char = '<' if self.endianness == 'little' else '>'
         self.calculated_fields: List[FieldDefinition] = []
@@ -176,21 +179,37 @@ class BinaryFormatHandler:
         self.field_sizes: Dict[str, int] = {}
         self.scope_resolver = None
         
-    def _load_format_definition(self, format_file: str) -> Dict[str, Any]:
-        """Load and validate format definition from JSON file."""
+    def _load_format_definition(self, format_source: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
+        """Load and validate format definition from various sources."""
         try:
-            with open(format_file, 'r', encoding='utf-8') as f:
-                format_def = json.load(f)
-                
+            # If it's already a dictionary, use it directly
+            if isinstance(format_source, dict):
+                format_def = format_source
+            elif isinstance(format_source, str):
+                # Check if it's a JSON string or file path
+                format_source = format_source.strip()
+                if format_source.startswith('{') and format_source.endswith('}'):
+                    # It's a JSON string
+                    format_def = json.loads(format_source)
+                else:
+                    # It's a file path
+                    with open(format_source, 'r', encoding='utf-8') as f:
+                        format_def = json.load(f)
+            else:
+                raise BinaryFormatError(f"Unsupported format_source type: {type(format_source)}")
+            
+            # Validate the format definition
             if 'fields' not in format_def:
                 raise BinaryFormatError("Format definition must contain 'fields' key")
                 
             return format_def
             
         except FileNotFoundError:
-            raise BinaryFormatError(f"Format file not found: {format_file}")
+            raise BinaryFormatError(f"Format file not found: {format_source}")
         except json.JSONDecodeError as e:
-            raise BinaryFormatError(f"Invalid JSON in format file: {e}")
+            raise BinaryFormatError(f"Invalid JSON in format definition: {e}")
+        except Exception as e:
+            raise BinaryFormatError(f"Error loading format definition: {e}")
     
     def _parse_field_definition(self, field_def: Dict[str, Any]) -> FieldDefinition:
         """Parse a field definition from the JSON format."""
@@ -236,8 +255,9 @@ class BinaryFormatHandler:
                 parsed_variants[variant_key] = [self._parse_field_definition(f) for f in variant_fields]
         return field
     
-    def serialize_to_binary(self, data: Dict[str, Any], output_file: str) -> None:
+    
 
+    def serialize_to_binary(self, data: Dict[str, Any], output_file: str = None) -> bytes:
         try:
             buffer = io.BytesIO()
             self._serialize_phase1(buffer, self.format_json_dict['fields'], data)
@@ -249,11 +269,12 @@ class BinaryFormatHandler:
             final_data = self._serialize_phase2(buffer.getvalue(), data)
             
             # Write final data
-            with open(output_file, 'wb') as f:
-                f.write(final_data)            
-                
+            if output_file is not None:
+                with open(output_file, 'wb') as f:
+                    f.write(final_data)            
 
-                
+            return final_data
+        
         except Exception as e:
             raise BinaryFormatError(f"Serialization failed: {e}")
         
@@ -457,22 +478,35 @@ class BinaryFormatHandler:
         else:
             raise BinaryFormatError(f"Unsupported field type: {field.type}")
     
-    def deserialize_from_binary(self, input_file: str) -> Dict[str, Any]:
+    def deserialize_from_binary(self, input_source: Union[str, bytes]) -> Dict[str, Any]:
         """
-        Deserialize binary file to JSON data according to format definition.
+        Deserialize binary data to JSON data according to format definition.
         
         Args:
-            input_file: Path to input binary file
+            input_source: Can be one of:
+                - Path to binary file
+                - Bytes object containing binary data
             
         Returns:
             Dictionary containing the deserialized data
         """
         try:
-            with open(input_file, 'rb') as f:
-                fields = [self._parse_field_definition(field_def) for field_def in self.format_json_dict['fields']]
-                result = {}
-                self._deserialize_fields(f, fields,result,'')
-                return result
+            if isinstance(input_source, str):
+                # File path
+                with open(input_source, 'rb') as f:
+                    fields = [self._parse_field_definition(field_def) for field_def in self.format_json_dict['fields']]
+                    result = {}
+                    self._deserialize_fields(f, fields, result, '')
+                    return result
+            elif isinstance(input_source, (bytes, bytearray)):
+                # Bytes object
+                with io.BytesIO(input_source) as f:
+                    fields = [self._parse_field_definition(field_def) for field_def in self.format_json_dict['fields']]
+                    result = {}
+                    self._deserialize_fields(f, fields, result, '')
+                    return result
+            else:
+                raise BinaryFormatError(f"Unsupported input_source type: {type(input_source)}. Must be str (file path) or bytes.")
                 
         except Exception as e:
             raise BinaryFormatError(f"Deserialization failed: {e}")
@@ -521,6 +555,7 @@ class BinaryFormatHandler:
     def _write_nested_value(self, data: Dict[str, Any], path: str, value: Any) -> None:
         """Set a value in a nested dictionary using dot notation."""
         parts = path.split('.')
+        parts = [part for part in parts if part]  # Remove empty parts
         current = data
         for i,part in enumerate(parts):
             if '[' in part and part.endswith(']'):
