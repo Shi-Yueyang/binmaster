@@ -1,113 +1,93 @@
 # BinMaster
 
-A Python library for converting between JSON data and binary files using custom format definitions.
+A Python library for serializing and deserializing binary data using JSON format definitions.
 
 ## Features
 
-- Define binary formats with JSON
-- Support for integers, floats, strings, arrays, and nested structures
-- Little-endian and big-endian byte order
-- Variable and fixed-length fields
-- Conditional fields and calculated values (CRC, checksums)
+- Convert between JSON data and binary files
+- Support for basic types: integers, floats, strings, arrays
+- Support for complex structures and nested data
+- Little/big endian byte order support
+- Dynamic field references using context
 
 ## Supported Types
 
-**Basic**: `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`, `float32`, `float64`, `char`  
-**Complex**: `string`, `array`, `struct`
+**Basic**: `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`, `float32`, `float64`  
+**Complex**: `string`, `array`, `struct`, `union`
 
 ## Quick Start
 
-Create a format definition file:
+### 1. Define your binary format in JSON:
 
 ```json
 {
   "endianness": "little",
   "fields": [
+    {"name": "magic", "type": "uint32"},
+    {"name": "count", "type": "uint16"},
     {
-      "name": "header",
-      "type": "struct",
-      "fields": [
-        {"name": "magic", "type": "uint32"},
-        {"name": "version", "type": "uint16"}
-      ]
-    },
-    {"name": "count", "type": "uint32"},
-    {
-      "name": "data",
+      "name": "items",
       "type": "array",
-      "length_field": "count",
-      "element_type": "float32"
+      "length_field": "context['count']",
+      "element_type": "uint32"
     }
   ]
 }
 ```
 
-Use the handler:
+### 2. Use the handler:
 
 ```python
 from binary_format_handler import BinaryFormatHandler
 
-handler = BinaryFormatHandler('format.json')
+# Initialize with format definition
+handler = BinaryFormatHandler('format.json')  # From file
+# or
+handler = BinaryFormatHandler(format_dict)    # From dict
+# or  
+handler = BinaryFormatHandler('{"fields":[...]}')  # From JSON string
 
-# JSON to binary
+# Serialize JSON to binary
 data = {
-    "header": {"magic": 0x12345678, "version": 1},
+    "magic": 0x12345678,
     "count": 3,
-    "data": [1.0, 2.5, 3.14]
+    "items": [100, 200, 300]
 }
-handler.serialize_to_binary(data, 'output.bin')
+binary_data = handler.serialize_to_binary(data)
 
-# Binary to JSON
-restored = handler.deserialize_from_binary('output.bin')
+# Deserialize binary to JSON
+restored_data = handler.deserialize_from_binary(binary_data)
+# or from file
+restored_data = handler.deserialize_from_binary('data.bin')
 ```
 
-## Field Types
+## Array with Length Field
 
-### Arrays
+Use `length_field` to reference other fields for dynamic sizing:
+
 ```json
-// Fixed size
-{"name": "coords", "type": "array", "size": 3, "element_type": "float32"}
-
-// Variable size with length field
-{"name": "items", "type": "array", "length_field": "count", "element_type": "uint32"}
+{
+  "name": "payload",
+  "type": "array", 
+  "element_type": "uint8",
+  "length_field": "context['data_size']"
+}
 ```
 
-### Strings
-```json
-// Fixed size
-{"name": "name", "type": "string", "size": 32, "encoding": "utf-8"}
+## Testing
 
-// Variable size
-{"name": "text", "type": "string", "encoding": "utf-8"}
+Run the test suite:
+
+```bash
+pytest tests/
 ```
 
-### Conditional Fields
-```json
-{"name": "optional_data", "type": "uint32", "condition": "flags > 0"}
-```
+Run benchmarks:
 
-### Calculated Fields
-```json
-{"name": "checksum", "type": "uint32", "function": "crc32", "function_scope": "all_previous"}
+```bash
+pytest tests/test_benchmark.py -v -s
 ```
 
 ## Examples
 
-Check the `examples/` directory for complete examples:
-- Simple message format
-- 3D model with vertices and materials
-- Network packet with checksums
-- CN map format with conditional fields
-
-Run examples:
-```bash
-cd examples/01_simple_message && python simple_message_example.py
-cd examples/02_3d_model && python model_example.py
-cd examples/03_custom_format && python custom_format_example.py
-```
-
-## Installation
-
-```bash
-pip install crcmod  # Required dependency
-```
+Check the `examples/` directory for real-world format examples including CN map data structures.
