@@ -18,7 +18,7 @@
     {
       "name": "boses",
       "type": "array",
-      "length_field": "context[\"bos_cnt\"]",
+      "length_field": "context['bos_cnt']",
       "element_type": "struct",
       "element_fields": [
         { "name": "bos_near_track_id", "type": "uint8" },
@@ -36,7 +36,7 @@
     {
       "name": "eoses",
       "type": "array",
-      "length_field": "context[\"eos_cnt\"]",
+      "length_field": "context['eos_cnt']",
       "element_type": "struct",
       "element_fields": [
         { "name": "eos_near_track_id", "type": "uint8" },
@@ -122,7 +122,7 @@
             "name": "balise_message",
             "type": "array",
             "element_type": "uint8",
-            "length_field":"context[\"fix_points\"][-1][\"data_size\"] - 16"
+            "length_field":"context['fix_points'][-1]['data_size'] - 16"
           }
         ],
         "195":[
