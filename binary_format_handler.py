@@ -178,7 +178,7 @@ class BinaryFormatHandler:
         self.field_offsets: Dict[str, int] = {}
         self.field_sizes: Dict[str, int] = {}
         self.scope_resolver = None
-        
+    
     def _load_format_definition(self, format_source: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
         """Load and validate format definition from various sources."""
         try:
@@ -297,7 +297,7 @@ class BinaryFormatHandler:
             self.field_offsets[field.name] = start_offset
             
             # Handle calculated fields
-            if field.function and value == "auto":
+            if field.function:
                 self.calculated_fields.append(field)
                 format_str = self.endian_char + self.TYPE_MAP[field.type]
                 f.write(struct.pack(format_str, 0))
@@ -319,12 +319,32 @@ class BinaryFormatHandler:
             if offset is None:
                 continue
             
-            # Get scope data based on field definition
+            # Determine scope from function_parameters first (preferred),
+            # fall back to legacy top-level fields for backward compatibility.
+            params = field.function_parameters or {}
+            scope_type = (
+                params.get('function_scope') or
+                params.get('scope') or
+                field.function_scope or
+                "all_previous"
+            )
+            scope_start = (
+                params.get('function_scope_start') or
+                params.get('scope_start') or
+                field.function_scope_start
+            )
+            scope_end = (
+                params.get('function_scope_end') or
+                params.get('scope_end') or
+                field.function_scope_end
+            )
+            
+            # Get scope data based on resolved scope definition
             scope_data = self.scope_resolver.get_scope_data(
-                data, 
-                field.function_scope or "all_previous",
-                field.function_scope_start,
-                field.function_scope_end,
+                data,
+                scope_type,
+                scope_start,
+                scope_end,
                 offset
             )
             
@@ -437,8 +457,10 @@ class BinaryFormatHandler:
                 
             # Write array length if not fixed
             if field.length_field:
-                # Length is determined by another field (support dot notation)
-                array_length = eval(field.length_field, {}, {'context': context})
+                if isinstance(field.length_field,int):
+                    array_length = field.length_field
+                else:
+                    array_length = eval(field.length_field, {}, {'context': context})
                 if array_length is None:
                     raise BinaryFormatError(f"Length field {field.length_field} not found for array {field.name}")
             elif field.size:
@@ -518,7 +540,7 @@ class BinaryFormatHandler:
             if field.condition is not None:
                 pass
             data = self._get_nested_value(context, path)
-            if field.condition and not eval(field.condition,{}, {'context': context,'data': data}):
+            if field.condition and not eval(field.condition, {}, {'context': context,'data': data}):
                 continue
             self._deserialize_field(f, field, context,path)
     
@@ -646,9 +668,10 @@ class BinaryFormatHandler:
         elif field.type == 'array':
             # Array type
             if field.length_field:
-                # Length is determined by another field (support dot notation)
-                
-                array_length = eval(field.length_field, {}, {'context': context})
+                if isinstance(field.length_field,int):
+                    array_length = field.length_field
+                else:
+                    array_length = eval(field.length_field, {}, {'context': context})
                 if array_length is None:
                     raise BinaryFormatError(f"Length field {field.length_field} not found for array {field.name}")
             elif field.size:
@@ -712,98 +735,3 @@ class BinaryFormatHandler:
             print("Warning: Unsupported field type:", field.type)
             raise BinaryFormatError(f"Unsupported field type: {field.type}")
     
-def main():
-    """Example usage of the BinaryFormatHandler."""
-    # Example format definition
-    example_format = {
-        "endianness": "little",
-        "description": "Example binary format with various data types",
-        "fields": [
-            {
-                "name": "header",
-                "type": "struct",
-                "fields": [
-                    {"name": "magic", "type": "uint32"},
-                    {"name": "version", "type": "uint16"},
-                    {"name": "flags", "type": "uint16"}
-                ]
-            },
-            {
-                "name": "name",
-                "type": "string",
-                "size": 32,
-                "encoding": "utf-8"
-            },
-            {
-                "name": "data_count",
-                "type": "uint32"
-            },
-            {
-                "name": "data_array",
-                "type": "array",
-                "length_field": "data_count",
-                "element_type": "float32"
-            },
-            {
-                "name": "nested_data",
-                "type": "array",
-                "size": 2,
-                "element_type": "struct",
-                "element_fields": [
-                    {"name": "id", "type": "uint32"},
-                    {"name": "value", "type": "float64"}
-                ]
-            }
-        ]
-    }
-    
-    # Save example format
-    with open('example_format.json', 'w') as f:
-        json.dump(example_format, f, indent=2)
-    
-    # Example data
-    example_data = {
-        "header": {
-            "magic": 0x12345678,
-            "version": 1,
-            "flags": 0x0001
-        },
-        "name": "Test File",
-        "data_count": 3,
-        "data_array": [1.0, 2.5, 3.14],
-        "nested_data": [
-            {"id": 100, "value": 10.5},
-            {"id": 200, "value": 20.7}
-        ]
-    }
-    
-    # Create handler and test serialization/deserialization
-    try:
-        handler = BinaryFormatHandler('example_format.json')
-        
-        # Serialize to binary
-        print("Serializing data to binary file...")
-        handler.serialize_to_binary(example_data, 'example_data.bin')
-        
-        # Deserialize from binary
-        print("Deserializing data from binary file...")
-        restored_data = handler.deserialize_from_binary('example_data.bin')
-        
-        # Compare results
-        print("\nOriginal data:")
-        print(json.dumps(example_data, indent=2))
-        print("\nRestored data:")
-        print(json.dumps(restored_data, indent=2))
-        
-        # Verify they match
-        if example_data == restored_data:
-            print("\n✓ Serialization/deserialization successful!")
-        else:
-            print("\n✗ Data mismatch after round-trip!")
-            
-    except BinaryFormatError as e:
-        print(f"Error: {e}")
-
-
-if __name__ == "__main__":
-    main()

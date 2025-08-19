@@ -1,0 +1,71 @@
+{
+  "endianness": "big",
+  "description": "TACN-ATP Config2.line1",
+  "version": "1.0",
+  "fields": [
+    {
+      "name": "header_0",
+      "type": "array",
+      "element_type": "uint8",
+      "length_field": 4
+    },
+    { "name": "total_size", "type": "uint32" },
+    {
+      "name": "header_1",
+      "type": "array",
+      "element_type": "uint8",
+      "length_field": 4
+    },
+    { "name": "atp_size", "type": "uint32" },
+
+    {
+      "name": "apt_data_before_dmi",
+      "type": "array",
+      "element_type": "uint8",
+      "length_field": 7
+    },
+
+    {
+      "name": "ID_SUPPORT_TRAIN_TYPE",
+      "type": "struct",
+      "fields": [
+        { "name": "LOST_TIME_BETWEEN_CVC_AND_DMI", "type": "uint16" },
+        { "name": "DMI_LANGUAGE", "type": "uint8" },
+        { "name": "DMI_DRIVER_CONFIRM_INTEGRITY_DELAY", "type": "uint16" },
+        { "name": "DMI_EOT_EXHAUST_TIME", "type": "uint16" },
+        { "name": "ALLOW_LEVEL_SELECT_IN_LOGIN", "type": "uint8" },
+        { "name": "ROUTE_NOTIFICATION_DISPLAY_TIME", "type": "uint16" },
+        { "name": "DMI_USE_LKJ_SCREEN", "type": "uint8" },
+        { "name": "FLOOD_AREA_ALARM_DISTANCE", "type": "uint16" },
+        { "name": "DMI_TEXT_CODE_TYPE", "type": "uint8" }
+      ]
+    },
+    {
+      "name": "apt_data_after_dmi",
+      "type": "array",
+      "element_type": "uint8",
+      "length_field": 225
+    },
+ 
+    {
+      "name": "header_2",
+      "type": "array",
+      "element_type": "uint8",
+      "length_field": 4
+    },
+    { "name": "sdmu_size", "type": "uint32" },
+    {
+      "name": "sdmu_data",
+      "type": "array",
+      "element_type": "uint8",
+      "length_field": 35
+    },
+    {
+      "name": "crc",
+      "type": "uint32",
+      "function": "crc32",
+      "function_scope": "all_previous"
+
+    }
+  ]
+}
